@@ -11,7 +11,8 @@ class CleanletUiCatalog extends StatelessWidget {
   static const _views = [
     {
       'route': '/test',
-      'title': 'Test'
+      'title': 'Test',
+      'subtitle': 'This is a subtitle test',
     },
     {
       'route': '/login',
@@ -41,7 +42,6 @@ class CleanletUiCatalog extends StatelessWidget {
                   final route = _views[index]['route'];
 
                   return Ink(
-                    color: Theme.of(context).cardColor,
                     child: ListTile(
                       title: Text(title!),
                       subtitle:
