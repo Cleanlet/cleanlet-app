@@ -1,3 +1,4 @@
+import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:flutter/material.dart';
 
 class LoginPage extends StatelessWidget {
@@ -9,9 +10,7 @@ class LoginPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Login Page'),
       ),
-      body: const Center(
-        child: Text('This is a test login widget'),
-      ),
+      body: SignInScreen(),
     );
   }
 }

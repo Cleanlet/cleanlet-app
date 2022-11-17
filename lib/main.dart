@@ -1,9 +1,16 @@
 import 'dart:ui';
 
+import 'package:cleanlet/views/login.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide PhoneAuthProvider, EmailAuthProvider;
+import 'package:firebase_ui_auth/firebase_ui_auth.dart';
+
+
 
 import 'firebase_options.dart';
 
@@ -12,6 +19,10 @@ void main() async {
   await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+
+  FirebaseUIAuth.configureProviders([
+  EmailAuthProvider(),
+  ]);
   FlutterError.onError = (errorDetails) {
     FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
   };
@@ -20,6 +31,17 @@ void main() async {
     FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
     return true;
   };
+
+  // Pull firebase data from local emulators in dev
+  if (kDebugMode) {
+    try {
+      FirebaseFirestore.instance.useFirestoreEmulator('localhost', 8080);
+      await FirebaseAuth.instance.useAuthEmulator('localhost', 9099);
+    } catch (e) {
+      // ignore: avoid_print
+      print(e);
+    }
+  }
 
   runApp(
       const MyApp());
@@ -50,8 +72,9 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
       ),
       navigatorObservers: <NavigatorObserver>[observer],
-      home: MyHomePage(title: 'Flutter Demo Home Page', analytics: analytics,
-        observer: observer,),
+      home: LoginPage(),
+      // home: MyHomePage(title: 'Flutter Demo Home Page', analytics: analytics,
+      //   observer: observer,),
     );
   }
 }
