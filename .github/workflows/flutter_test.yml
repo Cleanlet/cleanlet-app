@@ -33,5 +33,5 @@ jobs:
           architecture: x64 # optional, x64 or arm64
       - run: flutter pub get
       - run: flutter analyze
-      - run: flutter test
+        #- run: flutter test
 
