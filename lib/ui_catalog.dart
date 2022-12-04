@@ -1,3 +1,5 @@
+import 'package:cleanlet/views/inlet.dart';
+import 'package:cleanlet/views/inlet_job.dart';
 import 'package:cleanlet/views/login.dart';
 import 'package:cleanlet/views/test.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -34,16 +36,16 @@ void main() async {
 
 class CleanletUiCatalog extends StatelessWidget {
   const CleanletUiCatalog({super.key});
+
   static const _views = [
     {
       'route': '/test',
       'title': 'Test',
       'subtitle': 'This is a subtitle test',
     },
-    {
-      'route': '/login',
-      'title': 'Login'
-    }
+    {'route': '/login', 'title': 'Login'},
+    {'route': '/inlet', 'title': 'Inlet'},
+    {'route': '/inlet-job', 'title': 'Inlet Job'},
   ];
   @override
   Widget build(BuildContext context) {
@@ -52,10 +54,12 @@ class CleanletUiCatalog extends StatelessWidget {
       routes: {
         '/test': (context) => const TestPage(),
         '/login': (context) => const LoginPage(),
+        '/inlet': (context) => const InletPage(),
+        '/inlet-job': (context) => const InletJobPage(),
       },
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Cleanlet UI Catalog'),
+          title: const Text('Cleanlet UIgit  Catalog'),
         ),
         body: Column(
           children: [
