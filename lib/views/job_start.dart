@@ -42,7 +42,7 @@ class _JobStartPageState extends State<JobStartPage> {
               color: Colors.grey[300],
               child: _image != null
                   ? Image.file(_image!, fit: BoxFit.cover)
-                  : Align(alignment: Alignment.center, child: const Text('Please select an take a photo or choose an image from your photo gallery', textAlign: TextAlign.center,)),
+                  : const Align(alignment: Alignment.center, child: Text('Please select an take a photo or choose an image from your photo gallery', textAlign: TextAlign.center,)),
             ),
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -69,11 +69,11 @@ class _JobStartPageState extends State<JobStartPage> {
                 ],
               ),
             ),
-            Spacer(),
+            const Spacer(),
             ElevatedButton.icon(
               onPressed: (_image == null) ? null : () => Navigator.pop(context),
-              icon: Icon(Icons.check),
-              label: Text("Complete"),
+              icon: const Icon(Icons.check),
+              label: const Text("Complete"),
               style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(40))
             )
           ],

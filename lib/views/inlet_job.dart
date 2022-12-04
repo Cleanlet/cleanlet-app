@@ -1,10 +1,8 @@
 import 'package:cleanlet/components/cleanup_steps.dart';
-import 'package:cleanlet/views/test.dart';
 import 'package:flutter/material.dart';
 
 import '../components/image_carousel.dart';
 import '../components/inlet_intro.dart';
-import 'job_start.dart';
 
 class InletJobPage extends StatefulWidget {
   const InletJobPage({super.key});
@@ -14,25 +12,6 @@ class InletJobPage extends StatefulWidget {
 }
 
 class _InletJobPageState extends State<InletJobPage> {
-  static const _views = [
-    {
-      'widget': JobStartPage(),
-      'title': 'Take before picture of drain',
-    },
-    {
-      'widget': JobStartPage(),
-      'title': 'Clean the drain',
-    },
-    {
-      'widget': JobStartPage(),
-      'title': 'Take an after picture of the drain',
-    }
-  ];
-  static const List<Widget> _viewLinks = [
-    JobStartPage(),
-    TestPage(),
-    JobStartPage(),
-  ];
 
   @override
   Widget build(BuildContext context) {

@@ -24,18 +24,18 @@ class _InletPageState extends State<InletPage> {
         ),
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: InletIntro(),
+          child: const InletIntro(),
         ),
-        Spacer(),
+        const Spacer(),
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 10.0),
           child: ElevatedButton.icon(
-            icon: Icon(Icons.notification_add),
+            icon: const Icon(Icons.notification_add),
             style: ElevatedButton.styleFrom(
-              minimumSize: Size.fromHeight(
+              minimumSize: const Size.fromHeight(
                   40), // fromHeight use double.infinity as width and 40 is the height
             ),
-            label: Text('Subscribe for future cleanings'),
+            label: const Text('Subscribe for future cleanings'),
             onPressed: () {},
           ),
         ),

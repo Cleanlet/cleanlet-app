@@ -36,7 +36,6 @@ class CleanupSteps extends StatelessWidget {
           itemCount: _views.length,
           itemBuilder: (BuildContext context, int index) {
             final title = _views[index]['title'];
-            final route = _views[index]['widget'];
 
             return Ink(
               child: ListTile(
