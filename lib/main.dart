@@ -83,6 +83,7 @@ class MyApp extends StatelessWidget {
       navigatorObservers: <NavigatorObserver>[observer],
       routes: {
         '/': (context) => LoginPage(
+
           actions: [
             AuthStateChangeAction<SignedIn>((context, state) {
               Navigator.pushReplacementNamed(context, '/profile');
