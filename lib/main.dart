@@ -1,26 +1,26 @@
+import 'package:cleanlet/views/home.dart';
 import 'package:cleanlet/views/login.dart';
 import 'package:cleanlet/views/profile.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_auth/firebase_auth.dart'
+    hide PhoneAuthProvider, EmailAuthProvider;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart' hide PhoneAuthProvider, EmailAuthProvider;
-import 'package:firebase_ui_auth/firebase_ui_auth.dart';
-
-
 
 import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   FirebaseUIAuth.configureProviders([
-  EmailAuthProvider(),
+    EmailAuthProvider(),
   ]);
   FlutterError.onError = (errorDetails) {
     FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
@@ -42,8 +42,7 @@ void main() async {
     }
   }
 
-  runApp(
-      const MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -51,7 +50,7 @@ class MyApp extends StatelessWidget {
 
   static FirebaseAnalytics analytics = FirebaseAnalytics.instance;
   static FirebaseAnalyticsObserver observer =
-  FirebaseAnalyticsObserver(analytics: analytics);
+      FirebaseAnalyticsObserver(analytics: analytics);
 
   String get initialRoute {
     final auth = FirebaseAuth.instance;
@@ -60,7 +59,7 @@ class MyApp extends StatelessWidget {
       return '/';
     }
 
-    return '/profile';
+    return '/home';
   }
 
   // This widget is the root of your application.
@@ -79,21 +78,23 @@ class MyApp extends StatelessWidget {
         // Notice that the counter didn't reset back to zero; the application
         // is not restarted.
         primarySwatch: Colors.blue,
+        useMaterial3: true,
       ),
       navigatorObservers: <NavigatorObserver>[observer],
       routes: {
+        '/home': (context) => const HomePage(),
         '/': (context) => LoginPage(
-          actions: [
-            AuthStateChangeAction<SignedIn>((context, state) {
-              Navigator.pushReplacementNamed(context, '/profile');
-          }),],
-        ),
-        '/profile': (context) => ProfilePage(
-    actions: [
-    SignedOutAction((context) {
-    Navigator.pushReplacementNamed(context, '/');
-    }),]
-        ),
+              actions: [
+                AuthStateChangeAction<SignedIn>((context, state) {
+                  Navigator.pushReplacementNamed(context, '/home');
+                }),
+              ],
+            ),
+        '/profile': (context) => ProfilePage(actions: [
+              SignedOutAction((context) {
+                Navigator.pushReplacementNamed(context, '/');
+              }),
+            ]),
       },
       initialRoute: initialRoute,
     );
