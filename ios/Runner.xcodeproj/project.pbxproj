@@ -143,6 +143,7 @@
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				3270890A2D52AFBA09897E0A /* [CP] Embed Pods Frameworks */,
 				E18C98BEF108AFA9B3AE2DA3 /* [firebase_crashlytics] Crashlytics Upload Symbols */,
+				A664CE895946A52EFFFA39C1 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -268,6 +269,23 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build";
+		};
+		A664CE895946A52EFFFA39C1 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources.sh\"\n";
+			showEnvVarsInLog = 0;
 		};
 		E18C98BEF108AFA9B3AE2DA3 /* [firebase_crashlytics] Crashlytics Upload Symbols */ = {
 			isa = PBXShellScriptBuildPhase;

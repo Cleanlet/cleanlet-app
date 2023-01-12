@@ -22,3 +22,9 @@ The simplest way to get local development running is to use the Firebase Emulato
 
 1. Install Firebase CLI (via NPM or Native)
 2. Firebase Login
+
+
+### Run Flutter App
+
+1. Start Firebase Emulator Suite: `firebase emulators:start --import=./emulator-data`
+2. Run Flutter App: `flutter run --dart-define GOOGLE_MAPS_KEY_IOS="xxxxx" --dart-define GOOGLE_MAPS_API_KEY_ANDROID="yyyyy"`

@@ -7,9 +7,9 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return  Scaffold(
+    return Scaffold(
       appBar: AppBar(
-        title: const Text('Login Page'),
+        title: const Text('Profile Page'),
       ),
       body: ProfileScreen(actions: actions),
     );
