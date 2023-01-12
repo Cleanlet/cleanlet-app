@@ -1,6 +1,7 @@
 import 'package:cleanlet/views/home.dart';
 import 'package:cleanlet/views/login.dart';
 import 'package:cleanlet/views/profile.dart';
+import 'package:cleanlet/views/settings.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart'
@@ -86,7 +87,8 @@ class MyApp extends StatelessWidget {
         '/': (context) => LoginPage(
               actions: [
                 AuthStateChangeAction<SignedIn>((context, state) {
-                  Navigator.pushReplacementNamed(context, '/home');
+                  Navigator.of(context)
+                      .pushNamedAndRemoveUntil('/home', (_) => false);
                 }),
               ],
             ),
@@ -95,6 +97,7 @@ class MyApp extends StatelessWidget {
                 Navigator.pushReplacementNamed(context, '/');
               }),
             ]),
+        '/settings': (context) => const SettingsPage(),
       },
       initialRoute: initialRoute,
     );

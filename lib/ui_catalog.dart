@@ -3,7 +3,8 @@ import 'package:cleanlet/views/inlet_job.dart';
 import 'package:cleanlet/views/login.dart';
 import 'package:cleanlet/views/test.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart' hide PhoneAuthProvider, EmailAuthProvider;
+import 'package:firebase_auth/firebase_auth.dart'
+    hide PhoneAuthProvider, EmailAuthProvider;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -59,7 +60,7 @@ class CleanletUiCatalog extends StatelessWidget {
       },
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Cleanlet UIgit  Catalog'),
+          title: const Text('Cleanlet UI  Catalog'),
         ),
         body: Column(
           children: [
@@ -75,7 +76,7 @@ class CleanletUiCatalog extends StatelessWidget {
                     child: ListTile(
                       title: Text(title!),
                       subtitle:
-                      subtitle != null ? Text(subtitle.toString()) : null,
+                          subtitle != null ? Text(subtitle.toString()) : null,
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
                         Navigator.pushNamed(context, route!);
@@ -84,7 +85,7 @@ class CleanletUiCatalog extends StatelessWidget {
                   );
                 },
                 separatorBuilder: (BuildContext context, int index) =>
-                const Divider(),
+                    const Divider(),
               ),
             ),
           ],
