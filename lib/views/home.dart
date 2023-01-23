@@ -1,10 +1,14 @@
 import 'dart:async';
 
+import 'package:cleanlet/services/inlets.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+
+import '../models/inlet.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -15,6 +19,8 @@ class HomePage extends StatefulWidget {
 
 class HomePageState extends State<HomePage> {
   FirebaseMessaging messaging = FirebaseMessaging.instance;
+  final InletService inlets = InletService();
+  List<Marker> mapMarkers = [];
 
   void registerNotification() async {
     // 3. On iOS, this helps to take the user permissions
@@ -77,7 +83,7 @@ class HomePageState extends State<HomePage> {
     registerNotification();
   }
 
-  Future<CameraPosition> _determinePosition() async {
+  Future<CameraPosition> _determinePosition(List<Inlet> inlets) async {
     bool serviceEnabled;
     LocationPermission permission;
 
@@ -112,9 +118,27 @@ class HomePageState extends State<HomePage> {
     // When we reach here, permissions are granted and we can
     // continue accessing the position of the device.
     Position currentPosition = await Geolocator.getCurrentPosition();
+    await updateMapMarkers(inlets);
     return CameraPosition(
         target: LatLng(currentPosition.latitude, currentPosition.longitude),
         zoom: 19);
+  }
+
+  Future<void> updateMapMarkers(List<Inlet> inlets) async {
+    mapMarkers = inlets
+        .map((inlet) => Marker(
+            markerId: MarkerId(inlet.referenceId),
+            position:
+                LatLng(inlet.geoLocation.latitude, inlet.geoLocation.longitude),
+            infoWindow: InfoWindow(
+              title: inlet.niceName,
+              snippet: inlet.referenceId,
+            )))
+        .toList();
+
+    setState(() {
+      mapMarkers = mapMarkers;
+    });
   }
 
   @override
@@ -130,30 +154,54 @@ class HomePageState extends State<HomePage> {
               icon: const Icon(Icons.menu_rounded))
         ],
       ),
-      body: FutureBuilder<CameraPosition>(
-          future: _determinePosition(),
-          builder: (BuildContext context, AsyncSnapshot<dynamic> snap) {
-            if (snap.hasData) {
-              final CameraPosition position = snap.data;
-              return SizedBox(
-                // width: MediaQuery.of(context).size.width,
-                // height: 350,
-                child: GoogleMap(
-                  mapType: MapType.normal,
-                  initialCameraPosition: position,
-                  onMapCreated: (GoogleMapController controller) {
-                    _controller.complete(controller);
-                  },
-                  // zoomControlsEnabled: false,
-                  myLocationEnabled: true,
-                  myLocationButtonEnabled: true,
-                ),
-              );
-            } else {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
-            }
+      body: StreamBuilder<QuerySnapshot>(
+          stream: inlets.getInlets(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) return const LinearProgressIndicator();
+            List<Inlet> inlets = snapshot.data!.docs
+                .map((doc) => Inlet.fromSnapshot(doc))
+                .toList();
+            List<Marker> markers = inlets
+                .map((inlet) => Marker(
+                    markerId: MarkerId(inlet.referenceId),
+                    position: LatLng(inlet.geoLocation.latitude,
+                        inlet.geoLocation.longitude),
+                    infoWindow: InfoWindow(
+                      title: inlet.niceName,
+                      snippet: inlet.referenceId,
+                      // onTap: () {
+                      //   Navigator.pushNamed(context, '/inlet',
+                      //       arguments: inlet.referenceId);
+                      // }
+                    )))
+                .toList();
+
+            return FutureBuilder<CameraPosition>(
+                future: _determinePosition(inlets),
+                builder: (BuildContext context, AsyncSnapshot<dynamic> snap) {
+                  if (snap.hasData) {
+                    final CameraPosition position = snap.data;
+                    return SizedBox(
+                      // width: MediaQuery.of(context).size.width,
+                      // height: 350,
+                      child: GoogleMap(
+                        mapType: MapType.normal,
+                        initialCameraPosition: position,
+                        onMapCreated: (GoogleMapController controller) {
+                          _controller.complete(controller);
+                        },
+                        markers: markers.toSet(),
+                        // zoomControlsEnabled: false,
+                        myLocationEnabled: true,
+                        myLocationButtonEnabled: true,
+                      ),
+                    );
+                  } else {
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+                });
           }),
     );
   }
