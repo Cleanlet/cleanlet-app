@@ -1,14 +1,14 @@
 import 'dart:async';
 
-import 'package:cleanlet/services/inlets.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../models/inlet.dart';
+import '../services/firestore_repository.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -19,7 +19,6 @@ class HomePage extends StatefulWidget {
 
 class HomePageState extends State<HomePage> {
   FirebaseMessaging messaging = FirebaseMessaging.instance;
-  final InletService inlets = InletService();
   List<Marker> mapMarkers = [];
 
   void registerNotification() async {
@@ -83,7 +82,7 @@ class HomePageState extends State<HomePage> {
     registerNotification();
   }
 
-  Future<CameraPosition> _determinePosition(List<Inlet> inlets) async {
+  Future<CameraPosition> _determinePosition() async {
     bool serviceEnabled;
     LocationPermission permission;
 
@@ -118,7 +117,7 @@ class HomePageState extends State<HomePage> {
     // When we reach here, permissions are granted and we can
     // continue accessing the position of the device.
     Position currentPosition = await Geolocator.getCurrentPosition();
-    await updateMapMarkers(inlets);
+    // await updateMapMarkers(inlets);
     return CameraPosition(
         target: LatLng(currentPosition.latitude, currentPosition.longitude),
         zoom: 19);
@@ -154,30 +153,30 @@ class HomePageState extends State<HomePage> {
               icon: const Icon(Icons.menu_rounded))
         ],
       ),
-      body: StreamBuilder<QuerySnapshot>(
-          stream: inlets.getInlets(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) return const LinearProgressIndicator();
-            List<Inlet> inlets = snapshot.data!.docs
-                .map((doc) => Inlet.fromSnapshot(doc))
-                .toList();
-            List<Marker> markers = inlets
-                .map((inlet) => Marker(
-                    markerId: MarkerId(inlet.referenceId),
-                    position: LatLng(inlet.geoLocation.latitude,
-                        inlet.geoLocation.longitude),
-                    infoWindow: InfoWindow(
-                      title: inlet.niceName,
-                      snippet: inlet.referenceId,
-                      // onTap: () {
-                      //   Navigator.pushNamed(context, '/inlet',
-                      //       arguments: inlet.referenceId);
-                      // }
-                    )))
-                .toList();
+      body: Consumer(
+          builder: (context, ref, child) {
+            final  inletsAsyncValue = ref.watch(inletsStreamProvider);
+            final List<Marker> mapMarkers = [];
+            if (inletsAsyncValue.value != null) {
+
+              mapMarkers.addAll(inletsAsyncValue.value!
+                  .map((inlet) => Marker(
+                      markerId: MarkerId(inlet.referenceId),
+                      position: LatLng(inlet.geoLocation.latitude,
+                          inlet.geoLocation.longitude),
+                      infoWindow: InfoWindow(
+                        title: inlet.niceName,
+                        snippet: inlet.referenceId,
+                        // onTap: () {
+                        //   Navigator.pushNamed(context, '/inlet',
+                        //       arguments: inlet.referenceId);
+                        // }
+                      )))
+                  .toList());
+            }
 
             return FutureBuilder<CameraPosition>(
-                future: _determinePosition(inlets),
+                future: _determinePosition(),
                 builder: (BuildContext context, AsyncSnapshot<dynamic> snap) {
                   if (snap.hasData) {
                     final CameraPosition position = snap.data;
@@ -190,7 +189,7 @@ class HomePageState extends State<HomePage> {
                         onMapCreated: (GoogleMapController controller) {
                           _controller.complete(controller);
                         },
-                        markers: markers.toSet(),
+                        markers: mapMarkers.toSet(),
                         // zoomControlsEnabled: false,
                         myLocationEnabled: true,
                         myLocationButtonEnabled: true,
