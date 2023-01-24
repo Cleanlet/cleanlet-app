@@ -95,7 +95,7 @@ class MyApp extends StatelessWidget {
               actions: [
                 AuthStateChangeAction<SignedIn>((context, state) {
                   Navigator.of(context)
-                      .pushNamedAndRemoveUntil('/home', (_) => false);
+                      .pushNamedAndRemoveUntil('git /home', (_) => false);
                 }),
               ],
             ),
