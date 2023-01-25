@@ -36,8 +36,8 @@ void main() async {
   // Pull firebase data from local emulators in dev
   if (kDebugMode) {
     try {
-      FirebaseFirestore.instance.useFirestoreEmulator('localhost', 8080);
-      await FirebaseAuth.instance.useAuthEmulator('localhost', 9099);
+      FirebaseFirestore.instance.useFirestoreEmulator('192.168.1.179', 8080);
+      await FirebaseAuth.instance.useAuthEmulator('192.168.1.179', 9099);
     } catch (e) {
       // ignore: avoid_print
       print(e);
@@ -87,6 +87,12 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
         useMaterial3: true,
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: ButtonStyle(
+            backgroundColor: MaterialStateProperty.all<Color>(Colors.blueAccent),
+            foregroundColor: MaterialStateProperty.all<Color>(Colors.white),
+          ),
+        ),
       ),
       navigatorObservers: <NavigatorObserver>[observer],
       routes: {

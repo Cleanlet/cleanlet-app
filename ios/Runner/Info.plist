@@ -47,6 +47,10 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+  <key>NSPhotoLibraryUsageDescription</key>
+  <string>Access to photos of cleaned drains</string>
+  <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+  <string>Access locatoin to show local drains to clean</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
     <string>This app needs access to location when open in order to show closes inlets.</string>
     <key>NSLocationAlwaysUsageDescription</key>
