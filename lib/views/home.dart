@@ -11,6 +11,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../models/inlet.dart';
 import '../services/firestore_repository.dart';
+import 'inlet_view.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -32,8 +33,6 @@ class HomePageState extends State<HomePage> {
       provisional: false,
       sound: true,
     );
-
-
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       if (kDebugMode) {
@@ -81,13 +80,9 @@ class HomePageState extends State<HomePage> {
     // Assume user is logged in for this example
     String? userId = FirebaseAuth.instance.currentUser?.uid;
 
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .update({
+    await FirebaseFirestore.instance.collection('users').doc(userId).update({
       'tokens': FieldValue.arrayUnion([token]),
     });
-
   }
 
   Future<void> setupToken() async {
@@ -110,7 +105,6 @@ class HomePageState extends State<HomePage> {
     super.initState();
     registerNotification();
     setupToken();
-
   }
 
   Future<CameraPosition> _determinePosition() async {
@@ -184,55 +178,54 @@ class HomePageState extends State<HomePage> {
               icon: const Icon(Icons.menu_rounded))
         ],
       ),
-      body: Consumer(
-          builder: (context, ref, child) {
-            final  inletsAsyncValue = ref.watch(inletsStreamProvider);
-            final List<Marker> mapMarkers = [];
-            if (inletsAsyncValue.value != null) {
+      body: Consumer(builder: (context, ref, child) {
+        final inletsAsyncValue = ref.watch(inletsStreamProvider);
+        final List<Marker> mapMarkers = [];
+        if (inletsAsyncValue.value != null) {
+          mapMarkers.addAll(inletsAsyncValue.value!
+              .map((inlet) => Marker(
+                    onTap: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => InletView(
+                                    inletId: inlet.referenceId,
+                                  )));
+                    },
+                    markerId: MarkerId(inlet.referenceId),
+                    position: LatLng(inlet.geoLocation.latitude,
+                        inlet.geoLocation.longitude),
+                  ))
+              .toList());
+        }
 
-              mapMarkers.addAll(inletsAsyncValue.value!
-                  .map((inlet) => Marker(
-                      markerId: MarkerId(inlet.referenceId),
-                      position: LatLng(inlet.geoLocation.latitude,
-                          inlet.geoLocation.longitude),
-                      infoWindow: InfoWindow(
-                        title: inlet.niceName,
-                        snippet: inlet.referenceId,
-                        // onTap: () {
-                        //   Navigator.pushNamed(context, '/inlet',
-                        //       arguments: inlet.referenceId);
-                        // }
-                      )))
-                  .toList());
-            }
-
-            return FutureBuilder<CameraPosition>(
-                future: _determinePosition(),
-                builder: (BuildContext context, AsyncSnapshot<dynamic> snap) {
-                  if (snap.hasData) {
-                    final CameraPosition position = snap.data;
-                    return SizedBox(
-                      // width: MediaQuery.of(context).size.width,
-                      // height: 350,
-                      child: GoogleMap(
-                        mapType: MapType.normal,
-                        initialCameraPosition: position,
-                        onMapCreated: (GoogleMapController controller) {
-                          _controller.complete(controller);
-                        },
-                        markers: mapMarkers.toSet(),
-                        // zoomControlsEnabled: false,
-                        myLocationEnabled: true,
-                        myLocationButtonEnabled: true,
-                      ),
-                    );
-                  } else {
-                    return const Center(
-                      child: CircularProgressIndicator(),
-                    );
-                  }
-                });
-          }),
+        return FutureBuilder<CameraPosition>(
+            future: _determinePosition(),
+            builder: (BuildContext context, AsyncSnapshot<dynamic> snap) {
+              if (snap.hasData) {
+                final CameraPosition position = snap.data;
+                return SizedBox(
+                  // width: MediaQuery.of(context).size.width,
+                  // height: 350,
+                  child: GoogleMap(
+                    mapType: MapType.normal,
+                    initialCameraPosition: position,
+                    onMapCreated: (GoogleMapController controller) {
+                      _controller.complete(controller);
+                    },
+                    markers: mapMarkers.toSet(),
+                    // zoomControlsEnabled: false,
+                    myLocationEnabled: true,
+                    myLocationButtonEnabled: true,
+                  ),
+                );
+              } else {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              }
+            });
+      }),
     );
   }
 }

@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+typedef InletID = String;
+
 class Inlet {
   GeoPoint geoLocation;
   String niceName;

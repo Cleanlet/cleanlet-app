@@ -14,6 +14,12 @@ class FirestoreRepository {
         builder: (data, documentId) => Inlet.fromMap(data, documentId),
       );
 
+  Stream<Inlet> watchInlet({required InletID InletID}) =>
+      _dataSource.watchDocument(
+        path: 'inlets/$InletID',
+        builder: (data, documentId) => Inlet.fromMap(data, documentId),
+      );
+
 }
 
 final databaseProvider = Provider<FirestoreRepository>((ref) {
@@ -23,4 +29,10 @@ final databaseProvider = Provider<FirestoreRepository>((ref) {
 final inletsStreamProvider = StreamProvider.autoDispose<List<Inlet>>((ref) {
   final database = ref.watch(databaseProvider);
   return database.watchInlets();
+});
+
+final inletStreamProvider =
+StreamProvider.autoDispose.family<Inlet, InletID>((ref, inletId) {
+  final database = ref.watch(databaseProvider);
+  return database.watchInlet(InletID: inletId);
 });

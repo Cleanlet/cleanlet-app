@@ -1,4 +1,5 @@
 import 'package:cleanlet/views/home.dart';
+import 'package:cleanlet/views/inlet_view.dart';
 import 'package:cleanlet/views/login.dart';
 import 'package:cleanlet/views/profile.dart';
 import 'package:cleanlet/views/settings.dart';
@@ -90,6 +91,8 @@ class MyApp extends StatelessWidget {
       routes: {
         '/profile': (context) => const ProfilePage(),
         '/settings': (context) => const SettingsPage(),
+        '/home': (context) => const HomePage(),
+        // '/inlet': (context) => const InletView(inletId: '',),
       },
       home: const AuthGate(),
     );
