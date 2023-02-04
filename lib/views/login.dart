@@ -1,19 +1,27 @@
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart'
+    hide PhoneAuthProvider, EmailAuthProvider;
 
 class LoginPage extends StatelessWidget {
-  final List<FirebaseUIAction> actions;
+  // final List<FirebaseUIAction> actions;
 
-  const LoginPage({super.key, this.actions = const []});
-
+  const LoginPage({super.key});
   @override
   Widget build(BuildContext context) {
+    FirebaseUIAuth.configureProviders([
+      EmailAuthProvider(),
+    ]);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Login Page'),
       ),
       body: SignInScreen(
-        actions: actions,
+        // actions: actions,
+        providers: [
+          EmailAuthProvider(),
+        ],
         headerBuilder: (context, constraints, _) {
           return const Padding(
             padding: EdgeInsets.only(top: 20),

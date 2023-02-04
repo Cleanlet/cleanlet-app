@@ -21,9 +21,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  FirebaseUIAuth.configureProviders([
-    EmailAuthProvider(),
-  ]);
+
   FlutterError.onError = (errorDetails) {
     FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
   };
@@ -33,11 +31,15 @@ void main() async {
     return true;
   };
 
+  FirebaseUIAuth.configureProviders([
+  EmailAuthProvider(),
+  ]);
+
   // Pull firebase data from local emulators in dev
   if (kDebugMode) {
     try {
-      FirebaseFirestore.instance.useFirestoreEmulator('192.168.1.179', 8080);
-      await FirebaseAuth.instance.useAuthEmulator('192.168.1.179', 9099);
+      FirebaseFirestore.instance.useFirestoreEmulator('127.0.0.1', 8080);
+      await FirebaseAuth.instance.useAuthEmulator('127.0.0.1', 9099);
     } catch (e) {
       // ignore: avoid_print
       print(e);
@@ -59,16 +61,6 @@ class MyApp extends StatelessWidget {
   static FirebaseAnalytics analytics = FirebaseAnalytics.instance;
   static FirebaseAnalyticsObserver observer =
       FirebaseAnalyticsObserver(analytics: analytics);
-
-  String get initialRoute {
-    final auth = FirebaseAuth.instance;
-
-    if (auth.currentUser == null) {
-      return '/';
-    }
-
-    return '/home';
-  }
 
   // This widget is the root of your application.
   @override
@@ -96,23 +88,44 @@ class MyApp extends StatelessWidget {
       ),
       navigatorObservers: <NavigatorObserver>[observer],
       routes: {
-        '/home': (context) => const HomePage(),
-        '/': (context) => LoginPage(
-              actions: [
-                AuthStateChangeAction<SignedIn>((context, state) {
-                  Navigator.of(context)
-                      .pushNamedAndRemoveUntil('git /home', (_) => false);
-                }),
-              ],
-            ),
-        '/profile': (context) => ProfilePage(actions: [
-              SignedOutAction((context) {
-                Navigator.pushReplacementNamed(context, '/');
-              }),
-            ]),
+        '/profile': (context) => const ProfilePage(),
         '/settings': (context) => const SettingsPage(),
       },
-      initialRoute: initialRoute,
+      home: const AuthGate(),
+    );
+  }
+}
+
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          if (kDebugMode) {
+            print("Snapshot Data: ${snapshot.data}");
+
+          } return SignInScreen(
+            providers: [
+              EmailAuthProvider(),
+            ],
+            headerBuilder: (context, constraints, _) {
+              return const Padding(
+                padding: EdgeInsets.only(top: 20),
+                child: AspectRatio(
+                  aspectRatio: 1,
+                  child: Image(image: AssetImage('assets/cleanlet-logo.png')),
+                ),
+              );
+            },
+          );
+        }
+
+        return const HomePage();
+      },
     );
   }
 }

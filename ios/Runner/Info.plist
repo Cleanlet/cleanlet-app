@@ -51,8 +51,10 @@
   <string>Access to photos of cleaned drains</string>
   <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
   <string>Access locatoin to show local drains to clean</string>
+  <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
 	<key>NSLocationWhenInUseUsageDescription</key>
-    <string>This app needs access to location when open in order to show closes inlets.</string>
+  <string>This app needs access to location when open in order to show closes inlets.</string>
     <key>NSLocationAlwaysUsageDescription</key>
     <string>This app needs access to location when in the background in order to show closes inlets.</string>
     <key>DART_DEFINES</key>
