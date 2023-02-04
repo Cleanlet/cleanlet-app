@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +21,7 @@ class HomePage extends StatefulWidget {
 
 class HomePageState extends State<HomePage> {
   FirebaseMessaging messaging = FirebaseMessaging.instance;
+  late String _token;
   List<Marker> mapMarkers = [];
 
   void registerNotification() async {
@@ -29,6 +32,8 @@ class HomePageState extends State<HomePage> {
       provisional: false,
       sound: true,
     );
+
+
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       if (kDebugMode) {
@@ -72,6 +77,30 @@ class HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> saveTokenToDatabase(String token) async {
+    // Assume user is logged in for this example
+    String? userId = FirebaseAuth.instance.currentUser?.uid;
+
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .update({
+      'tokens': FieldValue.arrayUnion([token]),
+    });
+
+  }
+
+  Future<void> setupToken() async {
+    // Get the token each time the application loads
+    String? token = await FirebaseMessaging.instance.getToken();
+
+    // Save the initial token to the database
+    await saveTokenToDatabase(token!);
+
+    // Any time the token refreshes, store this in the database too.
+    FirebaseMessaging.instance.onTokenRefresh.listen(saveTokenToDatabase);
+  }
+
   final Completer<GoogleMapController> _controller =
       Completer<GoogleMapController>();
 
@@ -80,6 +109,8 @@ class HomePageState extends State<HomePage> {
     // TODO: implement initState
     super.initState();
     registerNotification();
+    setupToken();
+
   }
 
   Future<CameraPosition> _determinePosition() async {
