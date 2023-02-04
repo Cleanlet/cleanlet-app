@@ -1,6 +1,4 @@
 import 'package:cleanlet/views/home.dart';
-import 'package:cleanlet/views/inlet_view.dart';
-import 'package:cleanlet/views/login.dart';
 import 'package:cleanlet/views/profile.dart';
 import 'package:cleanlet/views/settings.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';

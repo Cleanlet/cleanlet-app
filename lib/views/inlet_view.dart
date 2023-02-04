@@ -21,7 +21,7 @@ class InletView extends StatelessWidget {
             if (inletsAsyncValue.value != null) {
               return Center(child: Text(inletsAsyncValue.value!.referenceId));
           } else {
-              return Text("hi");
+              return const Text("hi");
             }
           }),
     );

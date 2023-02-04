@@ -14,9 +14,9 @@ class FirestoreRepository {
         builder: (data, documentId) => Inlet.fromMap(data, documentId),
       );
 
-  Stream<Inlet> watchInlet({required InletID InletID}) =>
+  Stream<Inlet> watchInlet({required InletID inletID}) =>
       _dataSource.watchDocument(
-        path: 'inlets/$InletID',
+        path: 'inlets/$inletID',
         builder: (data, documentId) => Inlet.fromMap(data, documentId),
       );
 
@@ -34,5 +34,5 @@ final inletsStreamProvider = StreamProvider.autoDispose<List<Inlet>>((ref) {
 final inletStreamProvider =
 StreamProvider.autoDispose.family<Inlet, InletID>((ref, inletId) {
   final database = ref.watch(databaseProvider);
-  return database.watchInlet(InletID: inletId);
+  return database.watchInlet(inletID: inletId);
 });

@@ -22,7 +22,6 @@ class HomePage extends StatefulWidget {
 
 class HomePageState extends State<HomePage> {
   FirebaseMessaging messaging = FirebaseMessaging.instance;
-  late String _token;
   List<Marker> mapMarkers = [];
 
   void registerNotification() async {
