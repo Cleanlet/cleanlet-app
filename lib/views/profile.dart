@@ -1,7 +1,6 @@
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:flutter/material.dart';
 
-
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key, });
 
@@ -14,7 +13,8 @@ class ProfilePage extends StatelessWidget {
       body: ProfileScreen(
         actions: [
           SignedOutAction((context) {
-            Navigator.pushReplacementNamed(context, '/');
+            Navigator.of(context)
+                .pushNamedAndRemoveUntil('/home', (Route<dynamic> route) => false);
           }),
         ],
 

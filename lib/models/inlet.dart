@@ -1,4 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../services/firestore_repository.dart';
 
 typedef InletID = String;
 
@@ -6,11 +10,30 @@ class Inlet {
   GeoPoint geoLocation;
   String niceName;
   String referenceId;
+  List<String> subscribed;
 
-  Inlet(
-      {required this.geoLocation,
-      required this.niceName,
-      required this.referenceId});
+
+  Inlet({required this.geoLocation,
+    required this.niceName,
+    required this.referenceId,
+    required this.subscribed
+  });
+
+  bool get isSubscribed =>
+      subscribed.contains(FirebaseAuth.instance.currentUser!.uid);
+
+  void subscribe(WidgetRef ref) =>
+      {
+        subscribed.add(FirebaseAuth.instance.currentUser!.uid),
+        ref.read(databaseProvider).updateInlet(this)
+
+      };
+  void unsubscribe(WidgetRef ref) =>
+      {
+        subscribed.remove(FirebaseAuth.instance.currentUser!.uid),
+        ref.read(databaseProvider).updateInlet(this)
+
+      };
 
   factory Inlet.fromMap(Map<String, dynamic>? data, String documentId) {
     if (data == null) {
@@ -21,10 +44,21 @@ class Inlet {
       throw StateError('missing niceName for inletId: $documentId');
     }
     final geoLocation = data['geoLocation'] as GeoPoint;
-    return Inlet(referenceId: documentId, geoLocation: geoLocation, niceName: niceName);
+    final List<String> subscribed;
+    if (data['subscribed'] == null) {
+      subscribed = [];
+    } else {
+      subscribed = List<String>.from(data['subscribed']);
+    }
+    return Inlet(  subscribed: subscribed, referenceId: documentId, geoLocation: geoLocation, niceName: niceName);
   }
 
   Map<String, dynamic> toJson() => _inletToJson(this);
+  Map<String, dynamic> toMap() {
+    return {
+      'subscribed': subscribed,
+    };
+  }
 }
 
 Map<String, dynamic> _inletToJson(Inlet instance) => <String, dynamic>{

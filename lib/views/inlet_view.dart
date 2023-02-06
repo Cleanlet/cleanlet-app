@@ -17,11 +17,36 @@ class InletView extends StatelessWidget {
       ),
       body: Consumer(
           builder: (context, ref, child) {
-            final  inletsAsyncValue = ref.watch(inletStreamProvider(inletId));
+            final AsyncValue<Inlet>  inletsAsyncValue = ref.watch(inletStreamProvider(inletId));
             if (inletsAsyncValue.value != null) {
-              return Center(child: Text(inletsAsyncValue.value!.referenceId));
+              return Column(
+                children: [
+                  Center(child: Text(inletsAsyncValue.value!.isSubscribed.toString())),
+                  Center(child: Text(inletsAsyncValue.value!.subscribed.toString())),
+                  (!inletsAsyncValue.value!.isSubscribed) ?
+                  Center(child: ElevatedButton(
+                      onPressed: () async {
+                        inletsAsyncValue.value!.subscribe(ref);
+                        // ref.read(databaseProvider).updateInlet(inletsAsyncValue.value!);
+
+                      },
+                      child: const Text("Subscribe"))) :
+                  Center(child: ElevatedButton(
+                      onPressed: () async {
+                        inletsAsyncValue.value!.unsubscribe(ref);
+                        // ref.read(databaseProvider).updateInlet(inletsAsyncValue.value!);
+
+                      },
+                      child: const Text("Unsubscribe"))),
+                ],
+
+              );
           } else {
-              return const Text("hi");
+              return Column(
+                children: const [
+                  Text("hi")
+                ],
+              );
             }
           }),
     );

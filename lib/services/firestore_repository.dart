@@ -20,6 +20,12 @@ class FirestoreRepository {
         builder: (data, documentId) => Inlet.fromMap(data, documentId),
       );
 
+  Future<void> updateInlet(Inlet inlet) =>
+      _dataSource.setData(
+        path: 'inlets/${inlet.referenceId}',
+        data: inlet.toMap(),
+      );
+
 }
 
 final databaseProvider = Provider<FirestoreRepository>((ref) {

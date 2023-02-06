@@ -4,6 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 class FirestoreDataSource {
   const FirestoreDataSource._();
 
+  Future<void> setData({
+    required String path,
+    required Map<String, dynamic> data,
+    bool merge = true,
+  }) async {
+    final reference = FirebaseFirestore.instance.doc(path);
+    await reference.set(data, SetOptions(merge: merge));
+
+  }
+
+
   Stream<List<T>> watchCollection<T>({
     required String path,
     required T Function(Map<String, dynamic>? data, String documentID) builder,

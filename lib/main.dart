@@ -89,10 +89,11 @@ class MyApp extends StatelessWidget {
       routes: {
         '/profile': (context) => const ProfilePage(),
         '/settings': (context) => const SettingsPage(),
-        '/home': (context) => const HomePage(),
+        '/home': (context) => const AuthGate(),
         // '/inlet': (context) => const InletView(inletId: '',),
       },
-      home: const AuthGate(),
+      initialRoute: '/home',
+      // home: const AuthGate(),
     );
   }
 }
