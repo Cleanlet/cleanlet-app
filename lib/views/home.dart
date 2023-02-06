@@ -1,14 +1,17 @@
 import 'dart:async';
 
-import 'package:cleanlet/services/inlets.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../models/inlet.dart';
+import '../services/firestore_repository.dart';
+import 'inlet_view.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -19,7 +22,6 @@ class HomePage extends StatefulWidget {
 
 class HomePageState extends State<HomePage> {
   FirebaseMessaging messaging = FirebaseMessaging.instance;
-  final InletService inlets = InletService();
   List<Marker> mapMarkers = [];
 
   void registerNotification() async {
@@ -73,6 +75,26 @@ class HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> saveTokenToDatabase(String token) async {
+    // Assume user is logged in for this example
+    String? userId = FirebaseAuth.instance.currentUser?.uid;
+
+    await FirebaseFirestore.instance.collection('users').doc(userId).update({
+      'tokens': FieldValue.arrayUnion([token]),
+    });
+  }
+
+  Future<void> setupToken() async {
+    // Get the token each time the application loads
+    String? token = await FirebaseMessaging.instance.getToken();
+
+    // Save the initial token to the database
+    await saveTokenToDatabase(token!);
+
+    // Any time the token refreshes, store this in the database too.
+    FirebaseMessaging.instance.onTokenRefresh.listen(saveTokenToDatabase);
+  }
+
   final Completer<GoogleMapController> _controller =
       Completer<GoogleMapController>();
 
@@ -81,9 +103,10 @@ class HomePageState extends State<HomePage> {
     // TODO: implement initState
     super.initState();
     registerNotification();
+    setupToken();
   }
 
-  Future<CameraPosition> _determinePosition(List<Inlet> inlets) async {
+  Future<CameraPosition> _determinePosition() async {
     bool serviceEnabled;
     LocationPermission permission;
 
@@ -118,7 +141,7 @@ class HomePageState extends State<HomePage> {
     // When we reach here, permissions are granted and we can
     // continue accessing the position of the device.
     Position currentPosition = await Geolocator.getCurrentPosition();
-    await updateMapMarkers(inlets);
+    // await updateMapMarkers(inlets);
     return CameraPosition(
         target: LatLng(currentPosition.latitude, currentPosition.longitude),
         zoom: 19);
@@ -154,55 +177,54 @@ class HomePageState extends State<HomePage> {
               icon: const Icon(Icons.menu_rounded))
         ],
       ),
-      body: StreamBuilder<QuerySnapshot>(
-          stream: inlets.getInlets(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) return const LinearProgressIndicator();
-            List<Inlet> inlets = snapshot.data!.docs
-                .map((doc) => Inlet.fromSnapshot(doc))
-                .toList();
-            List<Marker> markers = inlets
-                .map((inlet) => Marker(
+      body: Consumer(builder: (context, ref, child) {
+        final inletsAsyncValue = ref.watch(inletsStreamProvider);
+        final List<Marker> mapMarkers = [];
+        if (inletsAsyncValue.value != null) {
+          mapMarkers.addAll(inletsAsyncValue.value!
+              .map((inlet) => Marker(
+                    onTap: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => InletView(
+                                    inletId: inlet.referenceId,
+                                  )));
+                    },
                     markerId: MarkerId(inlet.referenceId),
                     position: LatLng(inlet.geoLocation.latitude,
                         inlet.geoLocation.longitude),
-                    infoWindow: InfoWindow(
-                      title: inlet.niceName,
-                      snippet: inlet.referenceId,
-                      // onTap: () {
-                      //   Navigator.pushNamed(context, '/inlet',
-                      //       arguments: inlet.referenceId);
-                      // }
-                    )))
-                .toList();
+                  ))
+              .toList());
+        }
 
-            return FutureBuilder<CameraPosition>(
-                future: _determinePosition(inlets),
-                builder: (BuildContext context, AsyncSnapshot<dynamic> snap) {
-                  if (snap.hasData) {
-                    final CameraPosition position = snap.data;
-                    return SizedBox(
-                      // width: MediaQuery.of(context).size.width,
-                      // height: 350,
-                      child: GoogleMap(
-                        mapType: MapType.normal,
-                        initialCameraPosition: position,
-                        onMapCreated: (GoogleMapController controller) {
-                          _controller.complete(controller);
-                        },
-                        markers: markers.toSet(),
-                        // zoomControlsEnabled: false,
-                        myLocationEnabled: true,
-                        myLocationButtonEnabled: true,
-                      ),
-                    );
-                  } else {
-                    return const Center(
-                      child: CircularProgressIndicator(),
-                    );
-                  }
-                });
-          }),
+        return FutureBuilder<CameraPosition>(
+            future: _determinePosition(),
+            builder: (BuildContext context, AsyncSnapshot<dynamic> snap) {
+              if (snap.hasData) {
+                final CameraPosition position = snap.data;
+                return SizedBox(
+                  // width: MediaQuery.of(context).size.width,
+                  // height: 350,
+                  child: GoogleMap(
+                    mapType: MapType.normal,
+                    initialCameraPosition: position,
+                    onMapCreated: (GoogleMapController controller) {
+                      _controller.complete(controller);
+                    },
+                    markers: mapMarkers.toSet(),
+                    // zoomControlsEnabled: false,
+                    myLocationEnabled: true,
+                    myLocationButtonEnabled: true,
+                  ),
+                );
+              } else {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              }
+            });
+      }),
     );
   }
 }

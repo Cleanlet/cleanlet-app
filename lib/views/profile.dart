@@ -2,8 +2,7 @@ import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:flutter/material.dart';
 
 class ProfilePage extends StatelessWidget {
-  final List<FirebaseUIAction> actions;
-  const ProfilePage({super.key, this.actions = const []});
+  const ProfilePage({super.key, });
 
   @override
   Widget build(BuildContext context) {
@@ -11,7 +10,15 @@ class ProfilePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Profile Page'),
       ),
-      body: ProfileScreen(actions: actions),
+      body: ProfileScreen(
+        actions: [
+          SignedOutAction((context) {
+            Navigator.of(context)
+                .pushNamedAndRemoveUntil('/home', (Route<dynamic> route) => false);
+          }),
+        ],
+
+      ),
     );
   }
 }

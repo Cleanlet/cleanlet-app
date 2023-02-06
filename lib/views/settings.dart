@@ -7,14 +7,14 @@ class SettingsPage extends StatelessWidget {
   static const _views = [
     {
       'route': '/profile',
-      'title': 'profile',
+      'title': 'User Profile',
     },
   ];
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile Page'),
+        title: const Text('Cleanlet Settings'),
       ),
       body: Column(
         children: [

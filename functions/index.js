@@ -66,17 +66,9 @@ exports.inletStatusUpdated = functions.firestore
 
 function checkWeatherStatus() {
   console.log("check weather status");
-  admin
-    .firestore()
-    .collection("inlets")
-    .get()
-    .then(function (querySnapshot) {
-      querySnapshot.forEach(function (doc) {
-        // do weather api checks here
-        console.log(doc.id, " => ", doc.data());
-        updateInletStatus(doc.id, "good");
-      });
-    });
+  fetch('https://api.weather.gov/points/39.9526,-75.1652')
+  .then((response) => response.json())
+  .then((data) => console.log(data));
 }
 
 function updateInletStatus(inletId, status = null) {

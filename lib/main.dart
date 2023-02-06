@@ -1,5 +1,4 @@
 import 'package:cleanlet/views/home.dart';
-import 'package:cleanlet/views/login.dart';
 import 'package:cleanlet/views/profile.dart';
 import 'package:cleanlet/views/settings.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -11,6 +10,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'firebase_options.dart';
 
@@ -20,9 +20,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  FirebaseUIAuth.configureProviders([
-    EmailAuthProvider(),
-  ]);
+
   FlutterError.onError = (errorDetails) {
     FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
   };
@@ -32,19 +30,29 @@ void main() async {
     return true;
   };
 
+  FirebaseUIAuth.configureProviders([
+  EmailAuthProvider(),
+  ]);
+
   // Pull firebase data from local emulators in dev
   if (kDebugMode) {
     try {
-      FirebaseFirestore.instance.useFirestoreEmulator('localhost', 8080);
-      await FirebaseAuth.instance.useAuthEmulator('localhost', 9099);
+      FirebaseFirestore.instance.useFirestoreEmulator('127.0.0.1', 8080);
+      await FirebaseAuth.instance.useAuthEmulator('127.0.0.1', 9099);
     } catch (e) {
       // ignore: avoid_print
       print(e);
     }
   }
 
-  runApp(const MyApp());
+  runApp(
+      const ProviderScope(
+          child: MyApp(),
+      )
+  );
 }
+
+// final inletProvider = Provider((ref) => InletService());
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -52,16 +60,6 @@ class MyApp extends StatelessWidget {
   static FirebaseAnalytics analytics = FirebaseAnalytics.instance;
   static FirebaseAnalyticsObserver observer =
       FirebaseAnalyticsObserver(analytics: analytics);
-
-  String get initialRoute {
-    final auth = FirebaseAuth.instance;
-
-    if (auth.currentUser == null) {
-      return '/';
-    }
-
-    return '/home';
-  }
 
   // This widget is the root of your application.
   @override
@@ -80,26 +78,56 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
         useMaterial3: true,
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: ButtonStyle(
+            backgroundColor: MaterialStateProperty.all<Color>(Colors.blueAccent),
+            foregroundColor: MaterialStateProperty.all<Color>(Colors.white),
+          ),
+        ),
       ),
       navigatorObservers: <NavigatorObserver>[observer],
       routes: {
-        '/home': (context) => const HomePage(),
-        '/': (context) => LoginPage(
-              actions: [
-                AuthStateChangeAction<SignedIn>((context, state) {
-                  Navigator.of(context)
-                      .pushNamedAndRemoveUntil('/home', (_) => false);
-                }),
-              ],
-            ),
-        '/profile': (context) => ProfilePage(actions: [
-              SignedOutAction((context) {
-                Navigator.pushReplacementNamed(context, '/');
-              }),
-            ]),
+        '/profile': (context) => const ProfilePage(),
         '/settings': (context) => const SettingsPage(),
+        '/home': (context) => const AuthGate(),
+        // '/inlet': (context) => const InletView(inletId: '',),
       },
-      initialRoute: initialRoute,
+      initialRoute: '/home',
+      // home: const AuthGate(),
+    );
+  }
+}
+
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          if (kDebugMode) {
+            print("Snapshot Data: ${snapshot.data}");
+
+          } return SignInScreen(
+            providers: [
+              EmailAuthProvider(),
+            ],
+            headerBuilder: (context, constraints, _) {
+              return const Padding(
+                padding: EdgeInsets.only(top: 20),
+                child: AspectRatio(
+                  aspectRatio: 1,
+                  child: Image(image: AssetImage('assets/cleanlet-logo.png')),
+                ),
+              );
+            },
+          );
+        }
+
+        return const HomePage();
+      },
     );
   }
 }
