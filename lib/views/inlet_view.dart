@@ -1,7 +1,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:map_launcher/map_launcher.dart';
 
+import '../components/image_carousel.dart';
+import '../components/inlet_intro.dart';
 import '../models/inlet.dart';
 import '../services/firestore_repository.dart';
 
@@ -17,30 +20,35 @@ class InletView extends StatelessWidget {
       ),
       body: Consumer(
           builder: (context, ref, child) {
-            final AsyncValue<Inlet>  inletsAsyncValue = ref.watch(inletStreamProvider(inletId));
-            if (inletsAsyncValue.value != null) {
-              return Column(
-                children: [
-                  Center(child: Text(inletsAsyncValue.value!.isSubscribed.toString())),
-                  Center(child: Text(inletsAsyncValue.value!.subscribed.toString())),
-                  (!inletsAsyncValue.value!.isSubscribed) ?
-                  Center(child: ElevatedButton(
-                      onPressed: () async {
-                        inletsAsyncValue.value!.subscribe(ref);
-                        // ref.read(databaseProvider).updateInlet(inletsAsyncValue.value!);
+            final AsyncValue<Inlet>  inlet = ref.watch(inletStreamProvider(inletId));
+            if (inlet.value != null) {
+              return Column(children: <Widget>[
+                const ImageCarousel(),
+                const SizedBox(
+                  height: 20,
+                ),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20.0),
+                  child:  InletIntro(coords: Coords(inlet.value!.geoLocation.latitude, inlet.value!.geoLocation.longitude)),
+                ),
+                const Spacer(),
+                (inlet.value!.isSubscribed) ?
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 10.0),
+                  child: OutlinedButton.icon(onPressed: () {
+                    inlet.value!.unsubscribe(ref);
+                  }, icon: const Icon(Icons.notification_add), label: const Text('Unsubscribe'), style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(
+                      40)),),
+                ) :
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 10.0),
+                  child: OutlinedButton.icon(onPressed: () {
+                    inlet.value!.subscribe(ref);
+                  }, icon: const Icon(Icons.notification_add), label: const Text('Subscribe for future cleanings'), style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(
+                      40)),),
+                )
 
-                      },
-                      child: const Text("Subscribe"))) :
-                  Center(child: ElevatedButton(
-                      onPressed: () async {
-                        inletsAsyncValue.value!.unsubscribe(ref);
-                        // ref.read(databaseProvider).updateInlet(inletsAsyncValue.value!);
-
-                      },
-                      child: const Text("Unsubscribe"))),
-                ],
-
-              );
+              ]);
           } else {
               return Column(
                 children: const [

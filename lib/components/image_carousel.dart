@@ -16,6 +16,7 @@ class ImageCarousel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     return FlutterCarousel(
       options: CarouselOptions(
         height: 200,
