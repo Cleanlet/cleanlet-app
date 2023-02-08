@@ -38,8 +38,8 @@ void main() async {
   // Pull firebase data from local emulators in dev
   if (kDebugMode) {
     try {
-      FirebaseFirestore.instance.useFirestoreEmulator('127.0.0.1', 8080);
-      await FirebaseAuth.instance.useAuthEmulator('127.0.0.1', 9099);
+      FirebaseFirestore.instance.useFirestoreEmulator('192.168.1.179', 8080);
+      await FirebaseAuth.instance.useAuthEmulator('192.168.1.179', 9099);
     } catch (e) {
       // ignore: avoid_print
       print(e);
