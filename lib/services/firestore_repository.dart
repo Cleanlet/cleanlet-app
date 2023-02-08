@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/inlet.dart';
+import '../models/user.dart';
+import 'firebase_auth_repository.dart';
 import 'firestore_data_source.dart';
 
 class FirestoreRepository {
@@ -20,12 +22,23 @@ class FirestoreRepository {
         builder: (data, documentId) => Inlet.fromMap(data, documentId),
       );
 
-  Future<void> updateInlet(Inlet inlet) =>
-      _dataSource.setData(
-        path: 'inlets/${inlet.referenceId}',
-        data: inlet.toMap(),
+  Stream<CleanletUser> watchUser({required String userID}) =>
+      _dataSource.watchDocument(
+        path: 'users/$userID',
+        builder: (data, documentId) => CleanletUser.fromMap(data, documentId),
       );
 
+  Future<void> updateInlet(String referenceId, { required Map<String, dynamic> data}) =>
+      _dataSource.setData(
+        path: 'inlets/$referenceId',
+        data: data,
+      );
+
+  Future<void> updateUser(String userId, { required Map<String, dynamic> data}) =>
+      _dataSource.setData(
+        path: 'users/$userId',
+        data: data,
+      );
 }
 
 final databaseProvider = Provider<FirestoreRepository>((ref) {
@@ -41,4 +54,14 @@ final inletStreamProvider =
 StreamProvider.autoDispose.family<Inlet, InletID>((ref, inletId) {
   final database = ref.watch(databaseProvider);
   return database.watchInlet(inletID: inletId);
+});
+
+final userProvider = StreamProvider.autoDispose((ref) {
+  final user = ref.watch(authStateChangesProvider).value;
+  if (user == null) {
+    throw AssertionError('User can\'t be null');
+
+  }
+  final database = ref.watch(databaseProvider);
+  return database.watchUser(userID: user.uid);
 });

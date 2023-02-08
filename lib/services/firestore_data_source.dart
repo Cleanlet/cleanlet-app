@@ -10,7 +10,7 @@ class FirestoreDataSource {
     bool merge = true,
   }) async {
     final reference = FirebaseFirestore.instance.doc(path);
-    await reference.set(data, SetOptions(merge: merge));
+    await reference.update(data);
 
   }
 

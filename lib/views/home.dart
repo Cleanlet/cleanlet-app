@@ -188,7 +188,7 @@ class HomePageState extends State<HomePage> {
                           context,
                           MaterialPageRoute(
                               builder: (context) => InletView(
-                                    inletId: inlet.referenceId,
+                                    inlet: inlet
                                   )));
                     },
                     markerId: MarkerId(inlet.referenceId),

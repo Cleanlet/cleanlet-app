@@ -1,8 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../services/firestore_repository.dart';
 
 typedef InletID = String;
 
@@ -22,18 +19,6 @@ class Inlet {
   bool get isSubscribed =>
       subscribed.contains(FirebaseAuth.instance.currentUser!.uid);
 
-  void subscribe(WidgetRef ref) =>
-      {
-        subscribed.add(FirebaseAuth.instance.currentUser!.uid),
-        ref.read(databaseProvider).updateInlet(this)
-
-      };
-  void unsubscribe(WidgetRef ref) =>
-      {
-        subscribed.remove(FirebaseAuth.instance.currentUser!.uid),
-        ref.read(databaseProvider).updateInlet(this)
-
-      };
 
   factory Inlet.fromMap(Map<String, dynamic>? data, String documentId) {
     if (data == null) {
@@ -59,7 +44,10 @@ class Inlet {
       'subscribed': subscribed,
     };
   }
+
+
 }
+
 
 Map<String, dynamic> _inletToJson(Inlet instance) => <String, dynamic>{
       'niceName': instance.niceName,

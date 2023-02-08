@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:map_launcher/map_launcher.dart';
 
 import '../components/image_carousel.dart';
 import '../components/inlet_intro.dart';
@@ -24,7 +25,7 @@ class _InletPageState extends State<InletPage> {
         ),
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: const InletIntro(),
+          child: InletIntro(coords: Coords(39.966407, 75.194149)),
         ),
         const Spacer(),
         Container(

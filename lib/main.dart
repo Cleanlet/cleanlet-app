@@ -1,3 +1,4 @@
+import 'package:cleanlet/services/firebase_auth_repository.dart';
 import 'package:cleanlet/views/home.dart';
 import 'package:cleanlet/views/profile.dart';
 import 'package:cleanlet/views/settings.dart';
@@ -103,31 +104,26 @@ class AuthGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          if (kDebugMode) {
-            print("Snapshot Data: ${snapshot.data}");
+    return Consumer(builder: (context, ref, child) {
+      final user = ref.watch(authStateChangesProvider).value;
+      if (user == null) {
+        return SignInScreen(
+          providers: [
+            EmailAuthProvider(),
+          ],
+          headerBuilder: (context, constraints, _) {
+            return const Padding(
+              padding: EdgeInsets.only(top: 20),
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: Image(image: AssetImage('assets/cleanlet-logo.png')),
+              ),
+            );
+          },
+        );
+      }
 
-          } return SignInScreen(
-            providers: [
-              EmailAuthProvider(),
-            ],
-            headerBuilder: (context, constraints, _) {
-              return const Padding(
-                padding: EdgeInsets.only(top: 20),
-                child: AspectRatio(
-                  aspectRatio: 1,
-                  child: Image(image: AssetImage('assets/cleanlet-logo.png')),
-                ),
-              );
-            },
-          );
-        }
-
-        return const HomePage();
-      },
-    );
+      return const HomePage();
+    });
   }
 }
