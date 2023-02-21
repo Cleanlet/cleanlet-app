@@ -78,20 +78,24 @@ function deg2rad(deg) {
   return deg * (Math.PI/180)
 }
 
+function calculatePoints(jobCompletionTime, taskAverageTime, distanceFromJob) {
+  const pointsPerSecond = 10; // set the base points per second
+  const timeDifference = taskAverageTime - jobCompletionTime;
+  const speedFactor = Math.max(timeDifference / taskAverageTime, 0);
+  const bonusPoints = Math.floor(speedFactor * pointsPerSecond * jobCompletionTime);
+  const sigmoidInput = distanceFromJob / 1000; // assuming distance is in meters
+  const sigmoidOutput = 1 / (1 + Math.exp(-sigmoidInput + 5));
+  const distancePoints = Math.floor(sigmoidOutput * pointsPerSecond * jobCompletionTime);
+  const totalPoints = Math.floor(jobCompletionTime * pointsPerSecond + bonusPoints + distancePoints);
+  return totalPoints;
+}
+
+
 exports.calculateJobPoints = functions.firestore
 .document("inletCleaningJobs/{jobId}")
 .onUpdate((change, context) => {
   const newValue = change.after.data();
   const status = newValue.status;
-
-  //  1. evaluate the distance from the user to the location
-  //  2. evaluate the time from the start of the job to the end of the job
-  //  3. evaluate the time from job acceptance to job start (distance traveled)
-  //  4. get the feet/min traveled by the user, compare that with normal walking speeds
-  //  5. get the user's points
-  //  6. get inlet's difficulty score
-
-  distance = dummyjob['']
 
   if (status === "completed") {
     //  get inlet location
@@ -112,6 +116,7 @@ exports.calculateJobPoints = functions.firestore
 //        status: "cleaningScheduled",
 //   });
 });
+  
 
 exports.inletStatusUpdated = functions.firestore
   .document("inlets/{inletId}")
@@ -131,6 +136,36 @@ exports.inletStatusUpdated = functions.firestore
     console.log(object.name)
   });
 
+  function getWeatherData(periods) {
+    const today = periods[0];
+    const tomorrow = periods[1];
+    const tenDays = periods.slice(0, 10);
+  
+    return { today, tomorrow, tenDays };
+  }
+  
+function calculateRainRisk(today, tomorrow, tenDays) {
+  // Calculate the rain accumulation for the next 10 days
+  const rainAccumulation = tenDays.reduce((total, day) => {
+    const { qpf = 0 } = day;
+    return total + qpf;
+  }, 0);
+
+  // Calculate the rainfall per hour for tomorrow
+  const { detailedForecast } = tomorrow;
+  const [, rainfallPerHourTomorrow] = detailedForecast.match(/(\d+(?:\.\d+)?).+rain/);
+
+  // Calculate the probability of precipitation for the next 10 days
+  const probabilityOfPrecipitation = tenDays.reduce((total, day) => {
+    const { pop = 0 } = day;
+    return total + pop;
+  }, 0) / 10;
+
+  // Calculate the risk score based on the rain accumulation, rainfall per hour, and probability of precipitation
+  const riskScore = (rainAccumulation * 2) + (rainfallPerHourTomorrow * 10) + (probabilityOfPrecipitation * 5);
+  return riskScore;
+}
+
 function checkWeatherStatus() {
   console.log("check weather status");
   admin
@@ -139,50 +174,39 @@ function checkWeatherStatus() {
     .get()
     .then(function (querySnapshot) {
       querySnapshot.forEach(function (doc) {
-        fetch('https://api.weather.gov/points/' + dummylocation['lat'] + ',' + dummylocation['lon'])
-          .then((response) => response.json())
-          .then((data) => fetch('https://api.weather.gov/gridpoints/' + data['properties']['cwa'] + '/' + data['properties']['gridX'] + ',' + data['properties']['gridY']))
-          .then((res) => res.json())
-          .then((res) => {
-            probabilityOfPrecipitation = res['properties']['probabilityOfPrecipitation']['values'];
-            mm = res['properties']['quantitativePrecipitation']['values'];
-
-            //  console.log(tmpjson);
-            let RainDays = 0;
-            //  forecast period
-            let RainThreshold = 4;
-            let RainPercThreshold = 30;
-            let RainAccumulation = 0;
-            console.log("check rain events in the next " + RainThreshold + " days");
-            for(var values of probabilityOfPrecipitation) {
-              //  console.log(values['value']);
-              if (RainDays < RainThreshold) {
-                if (values['value'] > RainPercThreshold) {
-                  console.log("It is going to rain in " + RainDays + " days, with a probability of " + values['value'] + "%");
-                  RainAccumulation ++;
-                }
-              }
-              RainDays ++;
-            }
-
-            console.log("  it's going to rain for " + RainAccumulation + " days within the next " + RainThreshold + " days.")
-
-            //  sets the inlet status to 
-            if (RainAccumulation == 1) {
-              //  updateInletStatus(doc.id, "rain");
-            } if (RainAccumulation > 1) {
-              //  updateInletStatus(doc.id, "lotsofrain");
-            } else if (RainAccumulation == 0) {
-              //  updateInletStatus(doc.id, "good");
-            }
-            
+        const baseUrl = 'https://api.weather.gov/points';
+        const url = `${baseUrl}/${dummylocation['lat']},${dummylocation['lon']}`;
+      
+        https.get(url, (response) => {
+          let data = '';
+          response.on('data', (chunk) => {
+            data += chunk;
           });
-
-        console.log(doc.id, " => ", doc.data());
-        //  updateInletStatus(doc.id, "good");
-      });
+          response.on('end', () => {
+            const { properties: { forecast } } = JSON.parse(data);
+      
+            https.get(forecast, (response) => {
+              let data = '';
+              response.on('data', (chunk) => {
+                data += chunk;
+              });
+              response.on('end', () => {
+                const { properties: { periods } } = JSON.parse(data);
+                const { today, tomorrow, tenDays } = getWeatherData(periods);
+      
+                const riskScore = calculateRainRisk(today, tomorrow, tenDays);
+                console.log(`The precipitation risk score for (${dummylocation['lat']}, ${dummylocation['lon']}) is ${riskScore}.`);
+              });
+            }).on('error', (error) => {
+              console.error(`Error getting weather data: ${error.message}`);
+            });
+          });
+        }).on('error', (error) => {
+          console.error(`Error getting weather forecast URL: ${error.message}`);
+        });
+      }
     });
-}
+  }
 
 function updateInletStatus(inletId, status = null) {
   admin.firestore().collection("inlets").doc(inletId).update({
