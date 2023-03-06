@@ -96,8 +96,10 @@ exports.calculateJobPoints = functions.firestore
 .onUpdate((change, context) => {
   const newValue = change.after.data();
   const status = newValue.status;
+  console.log("hello1");
 
   if (status === "completed") {
+    console.log("hello2");
     //  get inlet location
     admin.firestore().collection('inlets').doc(inletId).get("geoLocation").then(queryResult => {
         const jobCompletionTime = dummyjob['completedTimestamp'] - dummyjob['startedTimestamp'];
@@ -155,6 +157,9 @@ function calculateRainRisk(today, tomorrow, tenDays) {
     return total + pop;
   }, 0) / 10;
 
+  //  dry event
+  //  add;
+
   // Calculate the risk score based on the rain accumulation, rainfall per hour, and probability of precipitation
   const riskScore = (rainAccumulation * 2) + (rainfallPerHourTomorrow * 10) + (probabilityOfPrecipitation * 5);
   return riskScore;
@@ -170,6 +175,7 @@ function checkWeatherStatus() {
       querySnapshot.forEach(function (doc) {
         const baseUrl = 'https://api.weather.gov/points';
         const url = `${baseUrl}/${dummylocation['lat']},${dummylocation['lon']}`;
+        const documentPath = "firestoreDocumentPath"
       
         https.get(url, (response) => {
           let data = '';
@@ -189,6 +195,13 @@ function checkWeatherStatus() {
                 const { today, tomorrow, tenDays } = getWeatherData(periods);
       
                 const riskScore = calculateRainRisk(today, tomorrow, tenDays);
+                let risk = "low";
+                if (riskScore > 20) {
+                  risk = "high";
+                } else if (riskScore > 10) {
+                  risk = "medium";
+                }
+                await admin.firestore().doc(documentPath).update({ risk });
                 console.log(`The precipitation risk score for (${dummylocation['lat']}, ${dummylocation['lon']}) is ${riskScore}.`);
               });
             }).on('error', (error) => {
