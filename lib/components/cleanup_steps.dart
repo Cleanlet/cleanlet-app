@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import '../views/job_start.dart';
-import '../views/test.dart';
 
 class CleanupSteps extends StatelessWidget {
   const CleanupSteps({
@@ -18,9 +16,9 @@ class CleanupSteps extends StatelessWidget {
     }
   ];
   static const List<Widget> _viewLinks = [
-    JobStartPage(),
-    TestPage(),
-    JobStartPage(),
+    // JobStartPage('123', 'before'),
+    // TestPage('123'),
+    // JobStartPage('123', 'after'),
   ];
 
   @override

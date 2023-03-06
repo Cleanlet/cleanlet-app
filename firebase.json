@@ -12,9 +12,6 @@
         ".git",
         "firebase-debug.log",
         "firebase-debug.*.log"
-      ],
-      "predeploy": [
-        "npm --prefix \"$RESOURCE_DIR\" run lint"
       ]
     }
   ],
@@ -23,13 +20,15 @@
   },
   "emulators": {
     "auth": {
-      "port": 9099
+      "port": 9099,
+        "host": "0.0.0.0"
     },
     "functions": {
       "port": 5001
     },
     "firestore": {
-      "port": 8080
+      "port": 8080,
+      "host": "0.0.0.0"
     },
     "storage": {
       "port": 9199

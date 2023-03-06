@@ -8,12 +8,16 @@ class Inlet {
   String niceName;
   String referenceId;
   List<String> subscribed;
+  String? status;
+  String jobId;
 
 
   Inlet({required this.geoLocation,
     required this.niceName,
     required this.referenceId,
-    required this.subscribed
+    required this.subscribed,
+    required this.status,
+    required this.jobId,
   });
 
   bool get isSubscribed =>
@@ -35,7 +39,14 @@ class Inlet {
     } else {
       subscribed = List<String>.from(data['subscribed']);
     }
-    return Inlet(  subscribed: subscribed, referenceId: documentId, geoLocation: geoLocation, niceName: niceName);
+    final status = data['status'];
+    final String jobId;
+    if(data['jobId'] == null) {
+      jobId = '';
+    } else {
+      jobId = data['jobId'];
+    }
+    return Inlet(  subscribed: subscribed, referenceId: documentId, geoLocation: geoLocation, niceName: niceName, status: status, jobId: jobId);
   }
 
   Map<String, dynamic> toJson() => _inletToJson(this);

@@ -51,10 +51,6 @@ class FirestoreDataSource {
   }
 
 
-
-  // void updateInlet(Inlet inlet) async {
-  //   await collection.doc(inlet.referenceId).update(inlet.toJson());
-  // }
 }
 
 final firestoreDataSourceProvider = Provider<FirestoreDataSource>((ref) {
