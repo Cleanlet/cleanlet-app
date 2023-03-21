@@ -2,6 +2,10 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const fetch = require('node-fetch');
+const https = require('node:https');
+const path = require('path');
+const csv = require('csv-parser');
+const fs = require('fs');
 
 admin.initializeApp();
 
@@ -93,25 +97,73 @@ function calculatePoints(jobCompletionTime, taskAverageTime, distanceFromJob) {
 
 exports.calculateJobPoints = functions.firestore
 .document("inletCleaningJobs/{jobId}")
-.onUpdate((change, context) => {
+.onUpdate(async (change, context) => {
   const newValue = change.after.data();
-  const status = newValue.status;
-  console.log("hello1");
 
-  if (status === "completed") {
+  const { acceptedAt,
+          startedAt,
+          finishedAt,
+          inletId,
+          status,
+          acceptedLocation,
+          acceptedBy
+        } = newValue;
+
+  if (status === "cleaned") {
     console.log("hello2");
     //  get inlet location
-    admin.firestore().collection('inlets').doc(inletId).get("geoLocation").then(queryResult => {
-        const jobCompletionTime = dummyjob['completedTimestamp'] - dummyjob['startedTimestamp'];
-        const taskAverageTime = admin.firestore().collection('inlets').doc(inletId).get("avgtime");
-        const distanceFromJob = getDistanceFromLatLonInKm(dummyjob['acceptedLocation'][0],
-          dummyjob['acceptedLocation'][1],
-          admin.firestore().collection('inlets').doc(inletId).get("geoLocation")[0],
-          admin.firestore().collection('inlets').doc(inletId).get("geoLocation")[1]);
-        return  calculatePoints(jobCompletionTime,taskAverageTime,distanceFromJob);
-      }},
-      
-});
+
+    const inletRef = admin.firestore().collection('inlets').doc(inletId);
+    const doc = await inletRef.get();
+    if (!doc.exists) {
+      console.log('No such document!');
+    } else {
+      let { 
+        geoLocation,
+        taskAverageTime
+      } = doc.data();
+      const jobCompletionTime = finishedAt - startedAt;
+      //  console.log(geoLocation);
+      //  taskAverageTime can be null
+      if (!taskAverageTime) {
+        taskAverageTime = jobCompletionTime;
+      }
+
+      const distanceFromJob = getDistanceFromLatLonInKm(
+        acceptedLocation.latitude, acceptedLocation.longitude,
+        geoLocation.latitude, geoLocation.longitude
+      );
+      //  console.log(calculatePoints(jobCompletionTime,taskAverageTime,distanceFromJob));
+
+      const weatherRiskScore = 1;
+      let jobId = context.params.jobId;
+      let points = calculatePoints(jobCompletionTime,taskAverageTime,distanceFromJob) + weatherRiskScore;
+
+      const jobRef = admin.firestore().collection('inletCleaningJobs').doc(jobId);
+      const usrRef = admin.firestore().collection('users').doc(acceptedBy);
+      let batch = admin.firestore().batch();
+      batch.update(jobRef, {points: points, status: "finalized"});
+      batch.update(usrRef, {points: admin.firestore.FieldValue.increment(points)});
+      await batch.commit();
+    }
+
+    //admin.firestore().collection('inlets').doc(inletId).get().then(queryResult => {
+    //    const jobCompletionTime = finishedAt - startedAt;
+    //    console.log(queryResult['geoLocation']);
+    //    let taskAverageTime = queryResult['taskAverageTime'];
+    //    //  taskAverageTime can be null
+    //    if (!taskAverageTime) {
+    //      taskAverageTime = jobCompletionTime;
+    //    }
+    //
+    //    const distanceFromJob = getDistanceFromLatLonInKm(
+    //      acceptedAt[0], acceptedAt[1],
+    //      queryResult['geoLocation'][0], queryResult['geoLocation'][1]);
+    //    return calculatePoints(jobCompletionTime,taskAverageTime,distanceFromJob);
+    //});
+  }
+})
+
   
 
 exports.inletStatusUpdated = functions.firestore
@@ -122,14 +174,13 @@ exports.inletStatusUpdated = functions.firestore
     const watching = newValue.watching;
 
     if (status === "cleaningNeeded") {
-      createInletCleaningJob(context.params.inletId);
-      sendPushNotifications(watching);
+      createInletCleaningJob(context.params.inletId, newValue.risk);
+      //  sendPushNotifications(watching);
     }
   });
 
   exports.checkUploadedImage = functions.storage.object().onFinalize((object) => {
-    console.log("checking something")
-    console.log(object.name)
+    // wip
   });
 
   function getWeatherData(periods) {
@@ -149,7 +200,7 @@ function calculateRainRisk(today, tomorrow, tenDays) {
 
   // Calculate the rainfall per hour for tomorrow
   const { detailedForecast } = tomorrow;
-  const [, rainfallPerHourTomorrow] = detailedForecast.match(/(\d+(?:\.\d+)?).+rain/);
+  const rainfallPerHourTomorrow = detailedForecast.match(/(\d+(?:\.\d+)?).+rain/);
 
   // Calculate the probability of precipitation for the next 10 days
   const probabilityOfPrecipitation = tenDays.reduce((total, day) => {
@@ -162,57 +213,41 @@ function calculateRainRisk(today, tomorrow, tenDays) {
 
   // Calculate the risk score based on the rain accumulation, rainfall per hour, and probability of precipitation
   const riskScore = (rainAccumulation * 2) + (rainfallPerHourTomorrow * 10) + (probabilityOfPrecipitation * 5);
-  return riskScore;
+  return {score:riskScore,
+          rainAccumulation:rainAccumulation,
+          rainfallPerHourTomorrow:rainfallPerHourTomorrow,
+          probabilityOfPrecipitation:probabilityOfPrecipitation
+        };
 }
 
-function checkWeatherStatus() {
+async function checkWeatherStatus() {
   console.log("check weather status");
   admin
     .firestore()
     .collection("inlets")
     .get()
     .then(function (querySnapshot) {
-      querySnapshot.forEach(function (doc) {
+      querySnapshot.forEach(async function (doc) {
+        const inletRef = admin.firestore().collection('inlets').doc(doc.id);
+
         const baseUrl = 'https://api.weather.gov/points';
-        const url = `${baseUrl}/${dummylocation['lat']},${dummylocation['lon']}`;
-        const documentPath = "firestoreDocumentPath"
+        const url = `${baseUrl}/${doc.data().geoLocation.latitude},${doc.data().geoLocation.longitude}`;
+        console.log(doc.id);
+        
+        const response = await fetch(url);
+        const weatherData = await response.json();
+        const forecastURL = weatherData.properties.forecast;
+        const forecastData = await fetch(forecastURL);
+        const forecastJSON = await forecastData.json();
+        const periods = forecastJSON.properties.periods;
+        
+        const { today, tomorrow, tenDays } = getWeatherData(periods);
       
-        https.get(url, (response) => {
-          let data = '';
-          response.on('data', (chunk) => {
-            data += chunk;
-          });
-          response.on('end', () => {
-            const { properties: { forecast } } = JSON.parse(data);
-      
-            https.get(forecast, (response) => {
-              let data = '';
-              response.on('data', (chunk) => {
-                data += chunk;
-              });
-              response.on('end', () => {
-                const { properties: { periods } } = JSON.parse(data);
-                const { today, tomorrow, tenDays } = getWeatherData(periods);
-      
-                const riskScore = calculateRainRisk(today, tomorrow, tenDays);
-                let risk = "low";
-                if (riskScore > 20) {
-                  risk = "high";
-                } else if (riskScore > 10) {
-                  risk = "medium";
-                }
-                await admin.firestore().doc(documentPath).update({ risk });
-                console.log(`The precipitation risk score for (${dummylocation['lat']}, ${dummylocation['lon']}) is ${riskScore}.`);
-              });
-            }).on('error', (error) => {
-              console.error(`Error getting weather data: ${error.message}`);
-            });
-          });
-        }).on('error', (error) => {
-          console.error(`Error getting weather forecast URL: ${error.message}`);
-        });
-      }
-    });
+        const risk = calculateRainRisk(today, tomorrow, tenDays);
+
+        console.log(risk);
+        const res = await inletRef.update({risk: risk });
+      })})     
   }
 
 function updateInletStatus(inletId, status = null) {
@@ -222,7 +257,7 @@ function updateInletStatus(inletId, status = null) {
   });
 }
 
-function createInletCleaningJob(inletId) {
+function createInletCleaningJob(inletId, risk) {
   admin
     .firestore()
     .collection("inletCleaningJobs")
@@ -231,6 +266,7 @@ function createInletCleaningJob(inletId) {
       inletId: inletId,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       status: "pending",
+      risk: risk
     })
     .then(() => {
       admin.firestore().collection("inlets").doc(inletId).update({
