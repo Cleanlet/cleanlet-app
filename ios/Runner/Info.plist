@@ -49,8 +49,10 @@
 	<true/>
   <key>NSPhotoLibraryUsageDescription</key>
   <string>Access to photos of cleaned drains</string>
+  <key>NSCameraUsageDescription</key>
+  <string>Access to camera to take photos of cleaned drains</string>
   <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-  <string>Access locatoin to show local drains to clean</string>
+  <string>Access location to show local drains to clean</string>
   <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
 	<key>NSLocationWhenInUseUsageDescription</key>
