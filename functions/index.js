@@ -180,7 +180,40 @@ exports.inletStatusUpdated = functions.firestore
   });
 
   exports.checkUploadedImage = functions.storage.object().onFinalize((object) => {
-    // wip
+    const fileBucket = object.bucket; // The Storage bucket that contains the file.
+const filePath = object.name; // File path in the bucket.
+const fileDir = path.dirname(filePath);
+console.log("uploaded in " + fileDir);
+const contentType = object.contentType; // File content type.
+console.log(contentType)
+if (fileDir == 'inlet-uploads' && (contentType == "application/vnd.ms-excel" || contentType == "text/csv")) {
+  console.log(contentType);
+  console.log(filePath);
+  const results = [];
+  fs.createReadStream(filePath)
+    .pipe(csv())
+    .on('data', (data) => ResultStorage.push(data))
+    .on('end', () => {
+      console.log(results);
+    })
+  /*admin
+  .firestore()
+  .collection("users")
+  .doc(geoUidThing)
+  .set({
+    email: email,
+    displayName: displayName,
+    photoURL: photoURL,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  },{merge: true})
+  .then((writeResult) => {});*/
+} else {
+  console.log('Wrong folder or weird file');
+  return null;
+}
+
+const metageneration = object.metageneration; // Number of times metadata has been generated. New objects have a value of 1.
+console.log(object);
   });
 
   function getWeatherData(periods) {
