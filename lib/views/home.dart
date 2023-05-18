@@ -141,7 +141,42 @@ class HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Cleanlet'),
+        title: Consumer(
+          builder: (context, ref, child) {
+            final user = ref.watch(userProvider);
+            return user.when(
+                data: (user) {
+                  // create a string to display the user's name or email address display email if user's display name is null or blank
+                  String textToDisplay =
+                      (user.displayName != null && user.displayName!.isNotEmpty)
+                          ? user.displayName!
+                          : user.email;
+
+                  return Text(user!.displayName ?? "hi");
+                },
+                loading: () => const CircularProgressIndicator(),
+                error: (err, stack) => const Text('Error'));
+          },
+        ),
+        leading: Consumer(
+          builder: (context, ref, child) {
+            final user = ref.watch(userProvider);
+            return user.when(
+                data: (user) {
+                  // if user has a photoURL, display it in a CircleAvatar else display a generic person icon
+                  return user.photoURL != null
+                      ? Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: CircleAvatar(
+                            backgroundImage: NetworkImage(user.photoURL!),
+                          ),
+                        )
+                      : const Icon(Icons.person);
+                },
+                loading: () => const CircularProgressIndicator(),
+                error: (err, stack) => const Text('Error'));
+          },
+        ),
         actions: [
           IconButton(
               onPressed: () {

@@ -21,37 +21,39 @@ class InletView extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Inlet'),
       ),
-      body: Consumer(builder: (context, ref, child) {
-        ref.listen<AsyncValue>(
-          inletViewControllerProvider,
-          (_, state) => state.showAlertDialogOnError(context),
-        );
-        final inletAsyncValue =
-            ref.watch(inletStreamProvider(inlet.referenceId));
-        return inletAsyncValue.when(
-            data: (inlet) {
-              return Column(children: <Widget>[
-                const ImageCarousel(),
-                const SizedBox(
-                  height: 20,
-                ),
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 20.0),
-                  child: InletIntro(
-                      coords: Coords(inlet.geoLocation.latitude,
-                          inlet.geoLocation.longitude)),
-                ),
-                const SizedBox(
-                  height: 20,
-                ),
-                const Spacer(),
-                const CurrentInletsWatched(),
-                ShowButton(inlet),
-              ]);
-            },
-            error: (error, stack) => const Text('Error'),
-            loading: () => const Text('Loading...'));
-      }),
+      body: SafeArea(
+        child: Consumer(builder: (context, ref, child) {
+          ref.listen<AsyncValue>(
+            inletViewControllerProvider,
+            (_, state) => state.showAlertDialogOnError(context),
+          );
+          final inletAsyncValue =
+              ref.watch(inletStreamProvider(inlet.referenceId));
+          return inletAsyncValue.when(
+              data: (inlet) {
+                return Column(children: <Widget>[
+                  const ImageCarousel(),
+                  const SizedBox(
+                    height: 20,
+                  ),
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 20.0),
+                    child: InletIntro(
+                        coords: Coords(inlet.geoLocation.latitude,
+                            inlet.geoLocation.longitude)),
+                  ),
+                  const SizedBox(
+                    height: 20,
+                  ),
+                  const Spacer(),
+                  const CurrentInletsWatched(),
+                  ShowButton(inlet),
+                ]);
+              },
+              error: (error, stack) => const Text('Error'),
+              loading: () => const Text('Loading...'));
+        }),
+      ),
     );
   }
 }

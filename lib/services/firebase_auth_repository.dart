@@ -6,6 +6,8 @@ class AuthRepository {
   final FirebaseAuth _auth;
 
   Stream<User?> authStateChanges() => _auth.authStateChanges();
+  Stream<User?> userChanges() => _auth.userChanges();
+
   User? get currentUser => _auth.currentUser;
 
   Future<void> signInAnonymously() {
@@ -27,7 +29,7 @@ class AuthRepository {
 }
 
 final firebaseAuthProvider =
-Provider<FirebaseAuth>((ref) => FirebaseAuth.instance);
+    Provider<FirebaseAuth>((ref) => FirebaseAuth.instance);
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository(ref.watch(firebaseAuthProvider));
@@ -35,4 +37,8 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 
 final authStateChangesProvider = StreamProvider<User?>((ref) {
   return ref.watch(authRepositoryProvider).authStateChanges();
+});
+
+final userChangesProvider = StreamProvider<User?>((ref) {
+  return ref.watch(authRepositoryProvider).userChanges();
 });

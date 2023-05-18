@@ -16,7 +16,7 @@ class CurrentInletsWatched extends ConsumerWidget {
           return Text(
               'You currently volutneer to clean: ${user.inletsWatched.toString()} inlets');
         },
-        error: (error, stack) => const Text('Error'),
+        error: (error, stack) => const Text("error"),
         loading: () => const Text('Loading...'));
   }
 }
