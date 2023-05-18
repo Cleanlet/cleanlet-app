@@ -10,7 +10,7 @@ class FirestoreDataSource {
     bool merge = true,
   }) async {
     final reference = FirebaseFirestore.instance.doc(path);
-    await reference.set(data, SetOptions(merge: merge));
+    await reference.update(data);
 
   }
 
@@ -51,10 +51,6 @@ class FirestoreDataSource {
   }
 
 
-
-  // void updateInlet(Inlet inlet) async {
-  //   await collection.doc(inlet.referenceId).update(inlet.toJson());
-  // }
 }
 
 final firestoreDataSourceProvider = Provider<FirestoreDataSource>((ref) {

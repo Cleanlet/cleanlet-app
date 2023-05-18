@@ -44,6 +44,10 @@ exports.calculateJobPoints = functions.firestore
       //calculate points here
       console.log("completed job")
   }
+//  if (status === "accepted") {
+//   admin.firestore().collection("inlets").doc(newValue.inletId).update({
+//        status: "cleaningScheduled",
+//   });
 });
 
 exports.inletStatusUpdated = functions.firestore
@@ -55,7 +59,7 @@ exports.inletStatusUpdated = functions.firestore
 
     if (status === "cleaningNeeded") {
       createInletCleaningJob(context.params.inletId);
-      sendPushNotifications(watching);
+//      sendPushNotifications(watching);
     }
   });
 
@@ -88,14 +92,15 @@ function createInletCleaningJob(inletId) {
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       status: "pending",
     })
-    .then(() => {
+    .then((docRef) => {
       admin.firestore().collection("inlets").doc(inletId).update({
-        status: "cleaningScheduled",
+        jobId: docRef.id,
+        status: 'cleaningScheduled'
       });
     });
 }
 
-async function sendPushNotifications(watchingUsesrIds) {
+/* async function sendPushNotifications(watchingUsesrIds) {
   const fcmTokens = [];
   const payload = {
     notification: {
@@ -120,4 +125,4 @@ async function sendPushNotifications(watchingUsesrIds) {
   if (fcmTokens.length > 0) {
     admin.messaging().sendToDevice(fcmTokens, payload);
   }
-}
+} */

@@ -49,15 +49,34 @@
 	<true/>
   <key>NSPhotoLibraryUsageDescription</key>
   <string>Access to photos of cleaned drains</string>
+  <key>NSCameraUsageDescription</key>
+  <string>Access to camera to take photos of cleaned drains</string>
   <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-  <string>Access locatoin to show local drains to clean</string>
+  <string>Access location to show local drains to clean</string>
   <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
 	<key>NSLocationWhenInUseUsageDescription</key>
   <string>This app needs access to location when open in order to show closes inlets.</string>
     <key>NSLocationAlwaysUsageDescription</key>
     <string>This app needs access to location when in the background in order to show closes inlets.</string>
+    <key>LSApplicationQueriesSchemes</key>
+    <array>
+        <string>comgooglemaps</string>
+        <string>baidumap</string>
+        <string>iosamap</string>
+        <string>waze</string>
+        <string>yandexmaps</string>
+        <string>yandexnavi</string>
+        <string>citymapper</string>
+        <string>mapswithme</string>
+        <string>osmandmaps</string>
+        <string>dgis</string>
+        <string>qqmap</string>
+        <string>here-location</string>
+        <string>tomtomgo</string>
+    </array>
     <key>DART_DEFINES</key>
     <string>$(DART_DEFINES)</string>
+
 </dict>
 </plist>

@@ -1,3 +1,4 @@
+import 'package:cleanlet/services/firebase_auth_repository.dart';
 import 'package:cleanlet/views/home.dart';
 import 'package:cleanlet/views/profile.dart';
 import 'package:cleanlet/views/settings.dart';
@@ -7,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart'
     hide PhoneAuthProvider, EmailAuthProvider;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -37,22 +39,17 @@ void main() async {
   // Pull firebase data from local emulators in dev
   if (kDebugMode) {
     try {
-      FirebaseFirestore.instance.useFirestoreEmulator('127.0.0.1', 8080);
-      await FirebaseAuth.instance.useAuthEmulator('127.0.0.1', 9099);
+      FirebaseFirestore.instance.useFirestoreEmulator('localhost', 8080);
+      FirebaseStorage.instance.useStorageEmulator('localhost', 9199);
+      await FirebaseAuth.instance.useAuthEmulator('localhost', 9099);
     } catch (e) {
       // ignore: avoid_print
       print(e);
     }
   }
 
-  runApp(
-      const ProviderScope(
-          child: MyApp(),
-      )
-  );
+    runApp(const ProviderScope(child: MyApp()));
 }
-
-// final inletProvider = Provider((ref) => InletService());
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -103,31 +100,26 @@ class AuthGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          if (kDebugMode) {
-            print("Snapshot Data: ${snapshot.data}");
+    return Consumer(builder: (context, ref, child) {
+      final user = ref.watch(authStateChangesProvider).value;
+      if (user == null) {
+        return SignInScreen(
+          providers: [
+            EmailAuthProvider(),
+          ],
+          headerBuilder: (context, constraints, _) {
+            return const Padding(
+              padding: EdgeInsets.only(top: 20),
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: Image(image: AssetImage('assets/cleanlet-logo.png')),
+              ),
+            );
+          },
+        );
+      }
 
-          } return SignInScreen(
-            providers: [
-              EmailAuthProvider(),
-            ],
-            headerBuilder: (context, constraints, _) {
-              return const Padding(
-                padding: EdgeInsets.only(top: 20),
-                child: AspectRatio(
-                  aspectRatio: 1,
-                  child: Image(image: AssetImage('assets/cleanlet-logo.png')),
-                ),
-              );
-            },
-          );
-        }
-
-        return const HomePage();
-      },
-    );
+      return const HomePage();
+    });
   }
 }

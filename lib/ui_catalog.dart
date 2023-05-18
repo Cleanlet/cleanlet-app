@@ -1,7 +1,6 @@
 import 'package:cleanlet/views/inlet.dart';
 import 'package:cleanlet/views/inlet_job.dart';
 import 'package:cleanlet/views/login.dart';
-import 'package:cleanlet/views/test.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart'
     hide PhoneAuthProvider, EmailAuthProvider;
@@ -9,6 +8,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'firebase_options.dart';
 
@@ -32,7 +32,7 @@ void main() async {
     }
   }
 
-  runApp(const CleanletUiCatalog());
+  runApp(const ProviderScope(child: CleanletUiCatalog()));
 }
 
 class CleanletUiCatalog extends StatelessWidget {
@@ -53,7 +53,7 @@ class CleanletUiCatalog extends StatelessWidget {
     return MaterialApp(
       title: 'Cleanlet UI Catalog',
       routes: {
-        '/test': (context) => const TestPage(),
+        // '/test': (context) => const TestPage('123'),
         '/login': (context) => const LoginPage(),
         '/inlet': (context) => const InletPage(),
         '/inlet-job': (context) => const InletJobPage(),

@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/inlet.dart';
+import '../models/job.dart';
+import '../models/user.dart';
+import 'firebase_auth_repository.dart';
 import 'firestore_data_source.dart';
 
 class FirestoreRepository {
@@ -19,13 +22,35 @@ class FirestoreRepository {
         path: 'inlets/$inletID',
         builder: (data, documentId) => Inlet.fromMap(data, documentId),
       );
+  Stream<Job> watchJob({required String jobId}) =>
+    _dataSource.watchDocument(
+        path: 'inletCleaningJobs/$jobId',
+        builder: (data, documentId) => Job.fromMap(data, documentId),
+  );
 
-  Future<void> updateInlet(Inlet inlet) =>
-      _dataSource.setData(
-        path: 'inlets/${inlet.referenceId}',
-        data: inlet.toMap(),
+  Stream<CleanletUser> watchUser({required String userID}) =>
+      _dataSource.watchDocument(
+        path: 'users/$userID',
+        builder: (data, documentId) => CleanletUser.fromMap(data, documentId),
       );
 
+  Future<void> updateInlet(String referenceId, { required Map<String, dynamic> data}) =>
+      _dataSource.setData(
+        path: 'inlets/$referenceId',
+        data: data,
+      );
+
+  Future<void> updateUser(String userId, { required Map<String, dynamic> data}) =>
+      _dataSource.setData(
+        path: 'users/$userId',
+        data: data,
+      );
+
+  Future<void> updateJob(String jobId, {required Map<String, dynamic> data}) =>
+      _dataSource.setData(
+        path: 'inletCleaningJobs/$jobId',
+        data: data,
+      );
 }
 
 final databaseProvider = Provider<FirestoreRepository>((ref) {
@@ -41,4 +66,19 @@ final inletStreamProvider =
 StreamProvider.autoDispose.family<Inlet, InletID>((ref, inletId) {
   final database = ref.watch(databaseProvider);
   return database.watchInlet(inletID: inletId);
+});
+
+final jobStreamProvider = StreamProvider.autoDispose.family<Job, JobID>((ref, jobId) {
+  final database = ref.watch(databaseProvider);
+  return database.watchJob(jobId: jobId);
+});
+
+final userProvider = StreamProvider.autoDispose((ref) {
+  final user = ref.watch(authStateChangesProvider).value;
+  if (user == null) {
+    throw AssertionError('User can\'t be null');
+
+  }
+  final database = ref.watch(databaseProvider);
+  return database.watchUser(userID: user.uid);
 });

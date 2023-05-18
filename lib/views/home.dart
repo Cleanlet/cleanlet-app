@@ -6,11 +6,11 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../models/inlet.dart';
 import '../services/firestore_repository.dart';
+import '../services/geolocation.dart';
 import 'inlet_view.dart';
 
 class HomePage extends StatefulWidget {
@@ -100,52 +100,51 @@ class HomePageState extends State<HomePage> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     registerNotification();
     setupToken();
   }
 
-  Future<CameraPosition> _determinePosition() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    // Test if location services are enabled.
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      // Location services are not enabled don't continue
-      // accessing the position and request users of the
-      // App to enable the location services.
-      return Future.error('Location services are disabled.');
-    }
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        // Permissions are denied, next time you could try
-        // requesting permissions again (this is also where
-        // Android's shouldShowRequestPermissionRationale
-        // returned true. According to Android guidelines
-        // your App should show an explanatory UI now.
-        return Future.error('Location permissions are denied');
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      // Permissions are denied forever, handle appropriately.
-      return Future.error(
-          'Location permissions are permanently denied, we cannot request permissions.');
-    }
-
-    // When we reach here, permissions are granted and we can
-    // continue accessing the position of the device.
-    Position currentPosition = await Geolocator.getCurrentPosition();
-    // await updateMapMarkers(inlets);
-    return CameraPosition(
-        target: LatLng(currentPosition.latitude, currentPosition.longitude),
-        zoom: 19);
-  }
+  // Future<CameraPosition> _determinePosition() async {
+  //   bool serviceEnabled;
+  //   LocationPermission permission;
+  //
+  //   // Test if location services are enabled.
+  //   serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  //   if (!serviceEnabled) {
+  //     // Location services are not enabled don't continue
+  //     // accessing the position and request users of the
+  //     // App to enable the location services.
+  //     return Future.error('Location services are disabled.');
+  //   }
+  //
+  //   permission = await Geolocator.checkPermission();
+  //   if (permission == LocationPermission.denied) {
+  //     permission = await Geolocator.requestPermission();
+  //     if (permission == LocationPermission.denied) {
+  //       // Permissions are denied, next time you could try
+  //       // requesting permissions again (this is also where
+  //       // Android's shouldShowRequestPermissionRationale
+  //       // returned true. According to Android guidelines
+  //       // your App should show an explanatory UI now.
+  //       return Future.error('Location permissions are denied');
+  //     }
+  //   }
+  //
+  //   if (permission == LocationPermission.deniedForever) {
+  //     // Permissions are denied forever, handle appropriately.
+  //     return Future.error(
+  //         'Location permissions are permanently denied, we cannot request permissions.');
+  //   }
+  //
+  //   // When we reach here, permissions are granted and we can
+  //   // continue accessing the position of the device.
+  //   Position currentPosition = await Geolocator.getCurrentPosition();
+  //   // await updateMapMarkers(inlets);
+  //   return CameraPosition(
+  //       target: LatLng(currentPosition.latitude, currentPosition.longitude),
+  //       zoom: 19);
+  // }
 
   Future<void> updateMapMarkers(List<Inlet> inlets) async {
     mapMarkers = inlets
@@ -178,52 +177,69 @@ class HomePageState extends State<HomePage> {
         ],
       ),
       body: Consumer(builder: (context, ref, child) {
-        final inletsAsyncValue = ref.watch(inletsStreamProvider);
+        final position = ref.watch(positionProvider);
         final List<Marker> mapMarkers = [];
-        if (inletsAsyncValue.value != null) {
-          mapMarkers.addAll(inletsAsyncValue.value!
-              .map((inlet) => Marker(
-                    onTap: () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => InletView(
-                                    inletId: inlet.referenceId,
-                                  )));
-                    },
-                    markerId: MarkerId(inlet.referenceId),
-                    position: LatLng(inlet.geoLocation.latitude,
-                        inlet.geoLocation.longitude),
-                  ))
-              .toList());
-        }
-
-        return FutureBuilder<CameraPosition>(
-            future: _determinePosition(),
-            builder: (BuildContext context, AsyncSnapshot<dynamic> snap) {
-              if (snap.hasData) {
-                final CameraPosition position = snap.data;
-                return SizedBox(
-                  // width: MediaQuery.of(context).size.width,
-                  // height: 350,
-                  child: GoogleMap(
-                    mapType: MapType.normal,
-                    initialCameraPosition: position,
-                    onMapCreated: (GoogleMapController controller) {
-                      _controller.complete(controller);
-                    },
-                    markers: mapMarkers.toSet(),
-                    // zoomControlsEnabled: false,
-                    myLocationEnabled: true,
-                    myLocationButtonEnabled: true,
-                  ),
-                );
-              } else {
-                return const Center(
-                  child: CircularProgressIndicator(),
-                );
+        return position.when(
+            data: (currentPosition) {
+              final inletsAsyncValue = ref.watch(inletsStreamProvider);
+              if (inletsAsyncValue.value != null) {
+                mapMarkers.addAll(inletsAsyncValue.value!
+                    .map((inlet) =>
+                    Marker(
+                      onTap: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    InletView(
+                                        inlet: inlet
+                                    )));
+                      },
+                      markerId: MarkerId(inlet.referenceId),
+                      position: LatLng(inlet.geoLocation.latitude,
+                          inlet.geoLocation.longitude),
+                    ))
+                    .toList());
               }
-            });
+              return SizedBox(
+                // width: MediaQuery.of(context).size.width,
+                // height: 350,
+                child: GoogleMap(
+                  mapType: MapType.normal,
+                  initialCameraPosition: CameraPosition(
+                      target: LatLng(currentPosition.latitude,
+                          currentPosition.longitude),
+                      zoom: 19),
+                  onMapCreated: (GoogleMapController controller) {
+                    _controller.complete(controller);
+                  },
+                  markers: mapMarkers.toSet(),
+                  // zoomControlsEnabled: false,
+                  myLocationEnabled: true,
+                  myLocationButtonEnabled: true,
+                ),
+              );
+
+                // return FutureBuilder<CameraPosition>(
+                //     future: _determinePosition(),
+                //     builder: (BuildContext context, AsyncSnapshot<dynamic> snap) {
+                //       if (snap.hasData) {
+                //         final CameraPosition position = snap.data;
+                //
+                //       } else {
+                //         return const Center(
+                //           child: CircularProgressIndicator(),
+                //         );
+                //       }
+                //     });
+
+            }, error: (error, stack) => Text('Error: ${error.toString()}'), loading: () => const Text('Loading...')
+        );
+        // return position.when(data: (position) => { return Text(position.toString())}, error: (error, stack) => {Text(error.toString())}, loading: () => {const CircularProgressIndicator()});
+
+        // }
+
+
       }),
     );
   }

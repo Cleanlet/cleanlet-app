@@ -1,5 +1,5 @@
-import 'package:cleanlet/components/cleanup_steps.dart';
 import 'package:flutter/material.dart';
+import 'package:map_launcher/map_launcher.dart';
 
 import '../components/image_carousel.dart';
 import '../components/inlet_intro.dart';
@@ -29,12 +29,8 @@ class _InletJobPageState extends State<InletJobPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              InletIntro(),
-              SizedBox(
-                height: 20,
-              ),
-              CleanupSteps()
+            children: [
+              InletIntro(coords: Coords(39.966407, 75.194149)),
             ],
           ),
         ),
