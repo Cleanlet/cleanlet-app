@@ -32,9 +32,9 @@ class InletIntro extends StatelessWidget {
                     destinationTitle: "Inlet Location",
                   );
                 },
-                child: Column(
+                child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const <Widget>[
+                  children: <Widget>[
                     Text('1234 Example Street Philadelphia PA 19106',
                         style: TextStyle(
                             fontSize: 16, fontWeight: FontWeight.bold)),
@@ -49,21 +49,21 @@ class InletIntro extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 20),
-        Row(
+        const Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(
+            Icon(
               Icons.description,
               color: Colors.green,
               size: 24,
             ),
-            const SizedBox(
+            SizedBox(
               width: 10,
             ),
             Flexible(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const <Widget>[
+                children: <Widget>[
                   Text('Inlet Description',
                       style:
                           TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),

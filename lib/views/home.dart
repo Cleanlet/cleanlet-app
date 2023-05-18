@@ -7,7 +7,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../components/current_inlets_watched.dart';
 import '../models/inlet.dart';
 import '../services/firestore_repository.dart';
 import '../services/geolocation.dart';
@@ -23,6 +25,19 @@ class HomePage extends StatefulWidget {
 class HomePageState extends State<HomePage> {
   FirebaseMessaging messaging = FirebaseMessaging.instance;
   List<Marker> mapMarkers = [];
+
+  Future<bool> checkFirstSeen() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool seen = (prefs.getBool('seen') ?? false);
+
+    if (!seen) {
+      await prefs.setBool('seen', true);
+      print('not seen yet');
+      return true; // return true when the dialog needs to be shown
+    }
+    print('seen');
+    return false; // return false when the dialog doesn't need to be shown
+  }
 
   void registerNotification() async {
     // 3. On iOS, this helps to take the user permissions
@@ -105,47 +120,6 @@ class HomePageState extends State<HomePage> {
     setupToken();
   }
 
-  // Future<CameraPosition> _determinePosition() async {
-  //   bool serviceEnabled;
-  //   LocationPermission permission;
-  //
-  //   // Test if location services are enabled.
-  //   serviceEnabled = await Geolocator.isLocationServiceEnabled();
-  //   if (!serviceEnabled) {
-  //     // Location services are not enabled don't continue
-  //     // accessing the position and request users of the
-  //     // App to enable the location services.
-  //     return Future.error('Location services are disabled.');
-  //   }
-  //
-  //   permission = await Geolocator.checkPermission();
-  //   if (permission == LocationPermission.denied) {
-  //     permission = await Geolocator.requestPermission();
-  //     if (permission == LocationPermission.denied) {
-  //       // Permissions are denied, next time you could try
-  //       // requesting permissions again (this is also where
-  //       // Android's shouldShowRequestPermissionRationale
-  //       // returned true. According to Android guidelines
-  //       // your App should show an explanatory UI now.
-  //       return Future.error('Location permissions are denied');
-  //     }
-  //   }
-  //
-  //   if (permission == LocationPermission.deniedForever) {
-  //     // Permissions are denied forever, handle appropriately.
-  //     return Future.error(
-  //         'Location permissions are permanently denied, we cannot request permissions.');
-  //   }
-  //
-  //   // When we reach here, permissions are granted and we can
-  //   // continue accessing the position of the device.
-  //   Position currentPosition = await Geolocator.getCurrentPosition();
-  //   // await updateMapMarkers(inlets);
-  //   return CameraPosition(
-  //       target: LatLng(currentPosition.latitude, currentPosition.longitude),
-  //       zoom: 19);
-  // }
-
   Future<void> updateMapMarkers(List<Inlet> inlets) async {
     mapMarkers = inlets
         .map((inlet) => Marker(
@@ -176,6 +150,12 @@ class HomePageState extends State<HomePage> {
               icon: const Icon(Icons.menu_rounded))
         ],
       ),
+      bottomNavigationBar: const BottomAppBar(
+        child: Padding(
+          padding: EdgeInsets.all(8.0),
+          child: CurrentInletsWatched(),
+        ),
+      ),
       body: Consumer(builder: (context, ref, child) {
         final position = ref.watch(positionProvider);
         final List<Marker> mapMarkers = [];
@@ -184,62 +164,60 @@ class HomePageState extends State<HomePage> {
               final inletsAsyncValue = ref.watch(inletsStreamProvider);
               if (inletsAsyncValue.value != null) {
                 mapMarkers.addAll(inletsAsyncValue.value!
-                    .map((inlet) =>
-                    Marker(
-                      onTap: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) =>
-                                    InletView(
-                                        inlet: inlet
-                                    )));
-                      },
-                      markerId: MarkerId(inlet.referenceId),
-                      position: LatLng(inlet.geoLocation.latitude,
-                          inlet.geoLocation.longitude),
-                    ))
+                    .map((inlet) => Marker(
+                          onTap: () {
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        InletView(inlet: inlet)));
+                          },
+                          markerId: MarkerId(inlet.referenceId),
+                          position: LatLng(inlet.geoLocation.latitude,
+                              inlet.geoLocation.longitude),
+                        ))
                     .toList());
               }
               return SizedBox(
-                // width: MediaQuery.of(context).size.width,
-                // height: 350,
                 child: GoogleMap(
                   mapType: MapType.normal,
                   initialCameraPosition: CameraPosition(
-                      target: LatLng(currentPosition.latitude,
-                          currentPosition.longitude),
+                      target: LatLng(
+                          currentPosition.latitude, currentPosition.longitude),
                       zoom: 19),
-                  onMapCreated: (GoogleMapController controller) {
+                  onMapCreated: (GoogleMapController controller) async {
                     _controller.complete(controller);
+                    if (await checkFirstSeen()) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: const Text('Hello World'),
+                              actions: <Widget>[
+                                TextButton(
+                                  child: const Text('OK'),
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      });
+                    }
                   },
+
                   markers: mapMarkers.toSet(),
                   // zoomControlsEnabled: false,
                   myLocationEnabled: true,
                   myLocationButtonEnabled: true,
                 ),
               );
-
-                // return FutureBuilder<CameraPosition>(
-                //     future: _determinePosition(),
-                //     builder: (BuildContext context, AsyncSnapshot<dynamic> snap) {
-                //       if (snap.hasData) {
-                //         final CameraPosition position = snap.data;
-                //
-                //       } else {
-                //         return const Center(
-                //           child: CircularProgressIndicator(),
-                //         );
-                //       }
-                //     });
-
-            }, error: (error, stack) => Text('Error: ${error.toString()}'), loading: () => const Text('Loading...')
-        );
-        // return position.when(data: (position) => { return Text(position.toString())}, error: (error, stack) => {Text(error.toString())}, loading: () => {const CircularProgressIndicator()});
-
-        // }
-
-
+            },
+            error: (error, stack) => Text('Error: ${error.toString()}'),
+            loading: () => const Text('Loading...'));
       }),
     );
   }
