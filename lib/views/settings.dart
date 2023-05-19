@@ -4,7 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 class SettingsPage extends StatelessWidget {
   final List<SettingsItem> items;
 
-  SettingsPage({Key? key, required this.items}) : super(key: key);
+  const SettingsPage({Key? key, required this.items}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

@@ -1,4 +1,5 @@
 import 'package:cleanlet/services/firebase_auth_repository.dart';
+import 'package:cleanlet/theme.dart';
 import 'package:cleanlet/views/add_inlet.dart';
 import 'package:cleanlet/views/home.dart';
 import 'package:cleanlet/views/profile.dart';
@@ -16,8 +17,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'models/user.dart';
 import 'services/firestore_repository.dart';
 
 import 'firebase_options.dart';
@@ -72,22 +71,6 @@ class _MyAppState extends ConsumerState<MyApp> {
 
   Future<ColorScheme>? imageColorSchemeFuture;
 
-  static const ColorScheme customColorScheme = ColorScheme(
-    primary: Color(0xff006780),
-    primaryVariant: Color(0xff006780),
-    secondary: Color(0xff4c626b),
-    secondaryVariant: Color(0xff4c626b),
-    surface: Color(0xfffbfcfe),
-    background: Color(0xfffbfcfe),
-    error: Color(0xffba1a1a),
-    onPrimary: Color(0xffffffff),
-    onSecondary: Color(0xffffffff),
-    onSurface: Color(0xff191c1d),
-    onBackground: Color(0xff191c1d),
-    onError: Color(0xffffffff),
-    brightness: Brightness.light,
-  );
-
   @override
   void initState() {
     super.initState();
@@ -100,112 +83,69 @@ class _MyAppState extends ConsumerState<MyApp> {
   Widget build(BuildContext context) {
     ref.watch(autoUpdateUserListenerProvider);
 
-    // Auto-update the user data in Firestore when the user's Firebase authentication data changes
-    return FutureBuilder<ColorScheme>(
-        future: imageColorSchemeFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return CircularProgressIndicator(); // Show loading indicator while waiting
-          } else if (snapshot.hasError) {
-            return Text('Error: ${snapshot.error}'); // Handle error case
-          } else {
-            ColorScheme? colorScheme =
-                snapshot.data; // Assume that this is your ColorScheme object
-
-// Now you can use the map to export the color values.
-// For instance, printing them to the console:
-            return MaterialApp(
-              title: 'Flutter Demo',
-              theme: ThemeData(
-                // This is the theme of your application.
-                //
-                // Try running your application with "flutter run". You'll see the
-                // application has a blue toolbar. Then, without quitting the app, try
-                // changing the primarySwatch below to Colors.green and then invoke
-                // "hot reload" (press "r" in the console where you ran "flutter run",
-                // or simply save your changes to "hot reload" in a Flutter IDE).
-                // Notice that the counter didn't reset back to zero; the application
-                // is not restarted.
-                // primarySwatch: Colors.blue,
-                colorScheme: customColorScheme,
-                outlinedButtonTheme: OutlinedButtonThemeData(
-                  style: ButtonStyle(
-                    backgroundColor: MaterialStateProperty.all<Color>(
-                        customColorScheme.primary),
-                    foregroundColor:
-                        MaterialStateProperty.all<Color>(Colors.white),
-                  ),
+    return MaterialApp(
+      title: 'Flutter Demo',
+      theme: AppTheme.customTheme,
+      navigatorObservers: <NavigatorObserver>[MyApp.observer],
+      routes: {
+        '/profile': (context) => const ProfilePage(),
+        '/settings': (context) => SettingsPage(
+              items: [
+                SettingsItem(
+                  title: 'Profile',
+                  icon: Icons.person,
+                  action: (context) {
+                    Navigator.pushNamed(context, '/profile');
+                  },
                 ),
-                // outlinedButtonTheme: OutlinedButtonThemeData(
-                //   style: OutlinedButton.styleFrom(
-                //     primary: customColorScheme.onPrimary,  // The color of the text
-                //     onSurface: customColorScheme.surface,  // The color of the button's border
-                //     backgroundColor: customColorScheme.primary,  // The color of the button's background
-                //   ),
-                // ),
-              ),
-              navigatorObservers: <NavigatorObserver>[MyApp.observer],
-              routes: {
-                '/profile': (context) => const ProfilePage(),
-                '/settings': (context) => SettingsPage(
-                      items: [
-                        SettingsItem(
-                          title: 'Profile',
-                          icon: Icons.person,
-                          action: (context) {
-                            Navigator.pushNamed(context, '/profile');
-                          },
-                        ),
-                        SettingsItem(
-                          title: 'Terms & Conditions',
-                          icon: Icons.link,
-                          action: (context) async {
-                            final url = Uri.parse(
-                                'https://cleanletapp.cae.drexel.edu/privacy-policy/');
-                            await _launchUrl(url);
-                          },
-                        ),
-                        SettingsItem(
-                          title: 'FAQs',
-                          icon: Icons.link,
-                          action: (context) async {
-                            final url = Uri.parse(
-                                'https://cleanletapp.cae.drexel.edu/');
-                            await _launchUrl(url);
-                          },
-                        ),
-                        SettingsItem(
-                          title: 'Add an Inlet',
-                          icon: Icons.add,
-                          action: (context) async {
-                            final url = Uri.parse(
-                                'https://docs.google.com/forms/d/e/1FAIpQLSe4ISFYoUAdZ93AZw14SBwfqHoH4ShKLfVVXKKhCz-3ibXZjQ/viewform');
-                            await _launchUrl(url);
-                          },
-                        ),
-                        SettingsItem(
-                          title: 'Submit Feedback',
-                          icon: Icons.email,
-                          action: (context) async {
-                            final email = Uri(
-                              scheme: 'mailto',
-                              path: 'casdrexel@gmail.com',
-                            );
-                            await _launchUrl(email);
-                          },
-                        ),
-                      ],
-                    ),
-                '/home': (context) => const AuthGate(),
-                '/add-inlet': (context) => AddInletPage(),
-                '/terms': (context) => TermsAndConditionsPage(),
-                // '/inlet': (context) => const InletView(inletId: '',),
-              },
-              initialRoute: '/home',
-              // home: const AuthGate(),
-            );
-          }
-        });
+                SettingsItem(
+                  title: 'Terms & Conditions',
+                  icon: Icons.link,
+                  action: (context) async {
+                    final url = Uri.parse(
+                        'https://cleanletapp.cae.drexel.edu/privacy-policy/');
+                    await _launchUrl(url);
+                  },
+                ),
+                SettingsItem(
+                  title: 'FAQs',
+                  icon: Icons.link,
+                  action: (context) async {
+                    final url =
+                        Uri.parse('https://cleanletapp.cae.drexel.edu/');
+                    await _launchUrl(url);
+                  },
+                ),
+                SettingsItem(
+                  title: 'Add an Inlet',
+                  icon: Icons.add,
+                  action: (context) async {
+                    final url = Uri.parse(
+                        'https://docs.google.com/forms/d/e/1FAIpQLSe4ISFYoUAdZ93AZw14SBwfqHoH4ShKLfVVXKKhCz-3ibXZjQ/viewform');
+                    await _launchUrl(url);
+                  },
+                ),
+                SettingsItem(
+                  title: 'Submit Feedback',
+                  icon: Icons.email,
+                  action: (context) async {
+                    final email = Uri(
+                      scheme: 'mailto',
+                      path: 'casdrexel@gmail.com',
+                    );
+                    await _launchUrl(email);
+                  },
+                ),
+              ],
+            ),
+        '/home': (context) => const AuthGate(),
+        '/add-inlet': (context) => const AddInletPage(),
+        '/terms': (context) => const TermsAndConditionsPage(),
+        // '/inlet': (context) => const InletView(inletId: '',),
+      },
+      initialRoute: '/home',
+      // home: const AuthGate(),
+    );
   }
 }
 

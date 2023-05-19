@@ -1,13 +1,14 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class TermsAndConditionsPage extends StatefulWidget {
+  const TermsAndConditionsPage({super.key});
+
   @override
-  _TermsAndConditionsPageState createState() => _TermsAndConditionsPageState();
+  TermsAndConditionsPageState createState() => TermsAndConditionsPageState();
 }
 
-class _TermsAndConditionsPageState extends State<TermsAndConditionsPage> {
+class TermsAndConditionsPageState extends State<TermsAndConditionsPage> {
   late final WebViewController controller;
 
   @override

@@ -81,7 +81,6 @@ final userProvider = StreamProvider.autoDispose((ref) {
   if (user == null) {
     throw AssertionError('User can\'t be null');
   }
-  print('user: $user');
   final database = ref.watch(databaseProvider);
   return database.watchUser(userID: user.uid);
 });

@@ -5,10 +5,10 @@ class AddInletPage extends StatefulWidget {
   const AddInletPage({super.key});
 
   @override
-  _AddInletPageState createState() => _AddInletPageState();
+  AddInletPageState createState() => AddInletPageState();
 }
 
-class _AddInletPageState extends State<AddInletPage> {
+class AddInletPageState extends State<AddInletPage> {
   late final WebViewController controller;
 
   @override

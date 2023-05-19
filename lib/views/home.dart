@@ -32,10 +32,8 @@ class HomePageState extends State<HomePage> {
 
     if (!seen) {
       await prefs.setBool('seen', true);
-      print('not seen yet');
       return true; // return true when the dialog needs to be shown
     }
-    print('seen');
     return false; // return false when the dialog doesn't need to be shown
   }
 
@@ -152,7 +150,7 @@ class HomePageState extends State<HomePage> {
                           ? user.displayName!
                           : user.email;
 
-                  return Text(user!.displayName ?? "hi");
+                  return Text(textToDisplay);
                 },
                 loading: () => const CircularProgressIndicator(),
                 error: (err, stack) => const Text('Error'));
@@ -180,80 +178,99 @@ class HomePageState extends State<HomePage> {
         actions: [
           IconButton(
               onPressed: () {
+                Navigator.pushNamed(context, '/inletSearch');
+              },
+              icon: const Icon(
+                Icons.help_outline_rounded,
+                color: Colors.white,
+              )),
+          IconButton(
+              onPressed: () {
                 Navigator.pushNamed(context, '/settings');
               },
               icon: const Icon(Icons.menu_rounded))
         ],
       ),
-      bottomNavigationBar: const BottomAppBar(
-        child: Padding(
-          padding: EdgeInsets.all(8.0),
-          child: CurrentInletsWatched(),
+      bottomNavigationBar: BottomAppBar(
+        //set color to the theme's primary color
+        color: Theme.of(context).colorScheme.primary,
+        //center text
+        child: const Padding(
+          padding: EdgeInsets.all(10.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              CurrentInletsWatched(),
+              // question mark icon button make it white
+            ],
+          ),
         ),
       ),
-      body: Consumer(builder: (context, ref, child) {
-        final position = ref.watch(positionProvider);
-        final List<Marker> mapMarkers = [];
-        return position.when(
-            data: (currentPosition) {
-              final inletsAsyncValue = ref.watch(inletsStreamProvider);
-              if (inletsAsyncValue.value != null) {
-                mapMarkers.addAll(inletsAsyncValue.value!
-                    .map((inlet) => Marker(
-                          onTap: () {
-                            Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) =>
-                                        InletView(inlet: inlet)));
-                          },
-                          markerId: MarkerId(inlet.referenceId),
-                          position: LatLng(inlet.geoLocation.latitude,
-                              inlet.geoLocation.longitude),
-                        ))
-                    .toList());
-              }
-              return SizedBox(
-                child: GoogleMap(
-                  mapType: MapType.normal,
-                  initialCameraPosition: CameraPosition(
-                      target: LatLng(
-                          currentPosition.latitude, currentPosition.longitude),
-                      zoom: 19),
-                  onMapCreated: (GoogleMapController controller) async {
-                    _controller.complete(controller);
-                    if (await checkFirstSeen()) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              title: const Text('Hello World'),
-                              actions: <Widget>[
-                                TextButton(
-                                  child: const Text('OK'),
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                  },
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                      });
-                    }
-                  },
+      body: SafeArea(
+        child: Consumer(builder: (context, ref, child) {
+          final position = ref.watch(positionProvider);
+          final List<Marker> mapMarkers = [];
+          return position.when(
+              data: (currentPosition) {
+                final inletsAsyncValue = ref.watch(inletsStreamProvider);
+                if (inletsAsyncValue.value != null) {
+                  mapMarkers.addAll(inletsAsyncValue.value!
+                      .map((inlet) => Marker(
+                            onTap: () {
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          InletView(inlet: inlet)));
+                            },
+                            markerId: MarkerId(inlet.referenceId),
+                            position: LatLng(inlet.geoLocation.latitude,
+                                inlet.geoLocation.longitude),
+                          ))
+                      .toList());
+                }
+                return SizedBox(
+                  child: GoogleMap(
+                    mapType: MapType.normal,
+                    initialCameraPosition: CameraPosition(
+                        target: LatLng(currentPosition.latitude,
+                            currentPosition.longitude),
+                        zoom: 19),
+                    onMapCreated: (GoogleMapController controller) async {
+                      _controller.complete(controller);
+                      if (await checkFirstSeen()) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: const Text('Hello World'),
+                                actions: <Widget>[
+                                  TextButton(
+                                    child: const Text('OK'),
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                    },
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        });
+                      }
+                    },
 
-                  markers: mapMarkers.toSet(),
-                  // zoomControlsEnabled: false,
-                  myLocationEnabled: true,
-                  myLocationButtonEnabled: true,
-                ),
-              );
-            },
-            error: (error, stack) => Text('Error: ${error.toString()}'),
-            loading: () => const Text('Loading...'));
-      }),
+                    markers: mapMarkers.toSet(),
+                    // zoomControlsEnabled: false,
+                    myLocationEnabled: true,
+                    myLocationButtonEnabled: true,
+                  ),
+                );
+              },
+              error: (error, stack) => Text('Error: ${error.toString()}'),
+              loading: () => const Text('Loading...'));
+        }),
+      ),
     );
   }
 }

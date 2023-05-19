@@ -9,14 +9,25 @@ class CurrentInletsWatched extends ConsumerWidget {
   }) : super(key: key);
 
   @override
-  build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(userProvider);
     return user.when(
-        data: (user) {
-          return Text(
-              'You currently volutneer to clean: ${user.inletsWatched.toString()} inlets');
-        },
-        error: (error, stack) => const Text("error"),
-        loading: () => const Text('Loading...'));
+      data: (user) {
+        final int inletsWatched = user.inletsWatched;
+        final String inletsText = inletsWatched == 1 ? 'inlet' : 'inlets';
+
+        return Padding(
+          padding: const EdgeInsets.only(top: 20),
+          child: Text(
+            'You currently volunteer to clean: $inletsWatched $inletsText',
+            style: const TextStyle(color: Colors.white),
+            textAlign: TextAlign.center,
+            textScaleFactor: 1.1,
+          ),
+        );
+      },
+      error: (error, stack) => const Text("error"),
+      loading: () => const Text('Loading...'),
+    );
   }
 }
