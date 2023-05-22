@@ -12,8 +12,49 @@ import '../models/inlet.dart';
 import '../services/firestore_repository.dart';
 
 class InletView extends StatelessWidget {
-  const InletView({Key? key, required this.inlet}) : super(key: key);
+  InletView({Key? key, required this.inlet}) : super(key: key);
   final Inlet inlet;
+
+  final List<String> instructions = [
+    'Upon arrival to the site, take a photo from a point that allows you to see all the debris located on and upgradient of the inlet.',
+    'Chalk or otherwise mark the point from which you took the photo so that you can take a post-cleaning photo from exactly the same point.',
+    'Use a shovel to remove debris from in and around the inlet. When removing debris that has been deposited on the inlet itself, take care not to push the debris through the gaps in the grate.',
+    'Using the shovel, create separate piles for recyclables (e.g. bottles, cans) and soil, leaves, and other organic debris. Using gloves, put the recyclables in one or more bags reserved for that purpose. Shovel the organic debris into a separate set of bags. Do not overfill any bag such that it is difficult to carry (too heavy for one person to carry with one hand).',
+    'Place the bags on the sidewalk near the curb.',
+    'Take a post-cleaning photo from the same point from which the pre-cleaning photo was taken.',
+    'Upload the pre- and post-cleaning photos to the Cleanlet app.',
+  ];
+
+  void showInstructions(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Cleaning Instructions'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: instructions.map((instruction) {
+                return ListTile(
+                  leading: CircleAvatar(
+                    child: Text('${instructions.indexOf(instruction) + 1}'),
+                  ),
+                  title: Text(instruction),
+                );
+              }).toList(),
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Close'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +85,12 @@ class InletView extends StatelessWidget {
                   ),
                   const SizedBox(
                     height: 20,
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      showInstructions(context);
+                    },
+                    child: Text("Show Cleaning Instructions"),
                   ),
                   const Spacer(),
                   const CurrentInletsWatched(),
@@ -126,7 +173,9 @@ class ShowButton extends ConsumerWidget {
   @override
   build(BuildContext context, WidgetRef ref) {
     String jobId = inlet.jobId;
+    print(inlet.toString());
     if (inlet.status == 'cleaningScheduled') {
+      print('status is cleaningScheduled');
       return VolunteerButton(jobId, inlet.referenceId);
     } else if (inlet.status == 'accepted') {
       return StartButton(inlet);

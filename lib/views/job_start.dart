@@ -82,68 +82,70 @@ class _JobStartPageState extends ConsumerState<CleaningPhotoView> {
       appBar: AppBar(
         title: Text('${widget.photoToTake} Cleaning Photo'),
       ),
-      body: Center(
-        child: Column(
-          children: [
-            Container(
-              alignment: Alignment.center,
-              width: double.infinity,
-              height: 300,
-              color: Colors.grey[300],
-              child: _image != null
-                  ? Image.file(_image!, fit: BoxFit.cover)
-                  : const Align(
-                      alignment: Alignment.center,
-                      child: Text(
-                        'Please select an take a photo or choose an image from your photo gallery',
-                        textAlign: TextAlign.center,
-                      )),
-            ),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        _openImagePicker(ImageSource.camera);
-                      },
-                      child: const Text('Take a picture'),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        _openImagePicker(ImageSource.gallery);
-                      },
-                      child: const Text('Choose an image'),
-                    ),
-                  ),
-                ],
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            children: [
+              Container(
+                alignment: Alignment.center,
+                width: double.infinity,
+                height: 300,
+                color: Colors.grey[300],
+                child: _image != null
+                    ? Image.file(_image!, fit: BoxFit.cover)
+                    : const Align(
+                        alignment: Alignment.center,
+                        child: Text(
+                          'Please select an take a photo or choose an image from your photo gallery',
+                          textAlign: TextAlign.center,
+                        )),
               ),
-            ),
-            const Spacer(),
-            ElevatedButton.icon(
-                onPressed: (_image == null)
-                    ? null
-                    : () async => {
-                          await imageRef.putFile(_image!),
-                          if (widget.photoToTake == 'Before')
-                            Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) =>
-                                        TestPage(widget.inlet)))
-                          else if (widget.photoToTake == 'After')
-                            await _completeJob(ref)
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          _openImagePicker(ImageSource.camera);
                         },
-                icon: const Icon(Icons.check),
-                label: const Text("Complete"),
-                style: ElevatedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(40)))
-          ],
+                        child: const Text('Take a picture'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          _openImagePicker(ImageSource.gallery);
+                        },
+                        child: const Text('Choose an image'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              ElevatedButton.icon(
+                  onPressed: (_image == null)
+                      ? null
+                      : () async => {
+                            await imageRef.putFile(_image!),
+                            if (widget.photoToTake == 'Before')
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          TestPage(widget.inlet)))
+                            else if (widget.photoToTake == 'After')
+                              await _completeJob(ref)
+                          },
+                  icon: const Icon(Icons.check),
+                  label: const Text("Complete"),
+                  style: ElevatedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(40)))
+            ],
+          ),
         ),
       ),
     );
