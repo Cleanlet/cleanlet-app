@@ -311,42 +311,44 @@ function createInletCleaningJob(inletId, risk) {
       .collection("inletCleaningJobs")
       .add({
       // TODO: figure out how to get a docRef here
-      inletId: inletId,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      status: "pending",
-      risk: risk,
-    })
-    .then((docRef) => {
-      admin.firestore().collection("inlets").doc(inletId).update({
-        jobId: docRef.id,
-        status: 'cleaningScheduled'
+        inletId: inletId,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        status: "pending",
+        risk: risk,
+      })
+      .then((docRef) => {
+        admin.firestore().collection("inlets").doc(inletId).update({
+          jobId: docRef.id,
+          status: "cleaningScheduled",
+        });
       });
 }
 
+
 // eslint-disable-next-line no-unused-vars
-async function sendPushNotifications(watchingUsesrIds) {
-  const fcmTokens = [];
-  const payload = {
-    notification: {
-      title: "Inlet needs cleaning",
-      body: "The inlet near you needs cleaning",
-      icon: "https://placekitten.com/200/200",
-    },
-  };
-  await watchingUsesrIds.forEach((userId) => {
-    admin
-        .firestore()
-        .collection("users")
-        .doc(userId)
-        .get()
-        .then((doc) => {
-          if (doc.exists) {
-          // Todo: add fcmToken to fcmTokens array
-            console.log(doc.data());
-          }
-        });
-  });
-  if (fcmTokens.length > 0) {
-    admin.messaging().sendToDevice(fcmTokens, payload);
-  }
-} */
+// async function sendPushNotifications(watchingUsesrIds) {
+//   const fcmTokens = [];
+//   const payload = {
+//     notification: {
+//       title: "Inlet needs cleaning",
+//       body: "The inlet near you needs cleaning",
+//       icon: "https://placekitten.com/200/200",
+//     },
+//   };
+//   await watchingUsesrIds.forEach((userId) => {
+//     admin
+//         .firestore()
+//         .collection("users")
+//         .doc(userId)
+//         .get()
+//         .then((doc) => {
+//           if (doc.exists) {
+//           // Todo: add fcmToken to fcmTokens array
+//             console.log(doc.data());
+//           }
+//         });
+//   });
+//   if (fcmTokens.length > 0) {
+//     admin.messaging().sendToDevice(fcmTokens, payload);
+//   }
+// }
