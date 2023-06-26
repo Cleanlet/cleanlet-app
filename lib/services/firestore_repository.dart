@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/inlet.dart';
@@ -11,8 +12,7 @@ class FirestoreRepository {
 
   final FirestoreDataSource _dataSource;
 
-  Stream<List<Inlet>> watchInlets() =>
-      _dataSource.watchCollection(
+  Stream<List<Inlet>> watchInlets() => _dataSource.watchCollection(
         path: 'inlets',
         builder: (data, documentId) => Inlet.fromMap(data, documentId),
       );
@@ -22,11 +22,10 @@ class FirestoreRepository {
         path: 'inlets/$inletID',
         builder: (data, documentId) => Inlet.fromMap(data, documentId),
       );
-  Stream<Job> watchJob({required String jobId}) =>
-    _dataSource.watchDocument(
+  Stream<Job> watchJob({required String jobId}) => _dataSource.watchDocument(
         path: 'inletCleaningJobs/$jobId',
         builder: (data, documentId) => Job.fromMap(data, documentId),
-  );
+      );
 
   Stream<CleanletUser> watchUser({required String userID}) =>
       _dataSource.watchDocument(
@@ -34,13 +33,15 @@ class FirestoreRepository {
         builder: (data, documentId) => CleanletUser.fromMap(data, documentId),
       );
 
-  Future<void> updateInlet(String referenceId, { required Map<String, dynamic> data}) =>
+  Future<void> updateInlet(String referenceId,
+          {required Map<String, dynamic> data}) =>
       _dataSource.setData(
         path: 'inlets/$referenceId',
         data: data,
       );
 
-  Future<void> updateUser(String userId, { required Map<String, dynamic> data}) =>
+  Future<void> updateUser(String userId,
+          {required Map<String, dynamic> data}) =>
       _dataSource.setData(
         path: 'users/$userId',
         data: data,
@@ -63,22 +64,59 @@ final inletsStreamProvider = StreamProvider.autoDispose<List<Inlet>>((ref) {
 });
 
 final inletStreamProvider =
-StreamProvider.autoDispose.family<Inlet, InletID>((ref, inletId) {
+    StreamProvider.autoDispose.family<Inlet, InletID>((ref, inletId) {
   final database = ref.watch(databaseProvider);
   return database.watchInlet(inletID: inletId);
 });
 
-final jobStreamProvider = StreamProvider.autoDispose.family<Job, JobID>((ref, jobId) {
+final jobStreamProvider =
+    StreamProvider.autoDispose.family<Job, JobID>((ref, jobId) {
   final database = ref.watch(databaseProvider);
   return database.watchJob(jobId: jobId);
 });
 
 final userProvider = StreamProvider.autoDispose((ref) {
   final user = ref.watch(authStateChangesProvider).value;
+
   if (user == null) {
     throw AssertionError('User can\'t be null');
-
   }
   final database = ref.watch(databaseProvider);
   return database.watchUser(userID: user.uid);
 });
+
+final autoUpdateUserProvider =
+    FutureProvider.family<void, User>((ref, user) async {
+  final db = ref.watch(databaseProvider);
+
+  final Map<String, dynamic> userData = {
+    'displayName': user.displayName,
+    'photoURL': user.photoURL,
+    'email': user.email!,
+  };
+
+  await db.updateUser(user.uid, data: userData);
+});
+
+final autoUpdateUserListenerProvider = Provider<void>((ref) {
+  final userAsyncValue = ref.watch(userChangesProvider);
+
+  userAsyncValue.maybeWhen(
+    data: (user) {
+      if (user != null) {
+        ref.read(autoUpdateUserProvider(user));
+      }
+    },
+    orElse: () {},
+  );
+});
+
+// final listenToUserChangesProvider = StreamProvider<void>((ref) {
+//   return ref.watch(userChangesProvider).asyncMap((user) {
+//     if (user != null) {
+//       return ref.read(autoUpdateUserProvider(user));
+//     } else {
+//       return Stream.value(null);
+//     }
+//   });
+// });
