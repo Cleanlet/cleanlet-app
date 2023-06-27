@@ -143,6 +143,16 @@ exports.inletStatusUpdated = functions.firestore
       const newValue = change.after.data();
       const status = newValue.status;
 
+      if (status.risk.probabilityofPercipition > 35) {
+        const inletRef = admin.firestore().collection("inlets").doc(context.params.inletId);
+        const doc = await inletRef.get();
+        if (!doc.exists) {
+          console.log("No such document!");
+        } else {
+          inletRef.update({status: "cleaningNeeded"});
+        }
+      }
+      
       if (status === "cleaningNeeded") {
         createInletCleaningJob(context.params.inletId, newValue.risk);
       //  sendPushNotifications(watching);
@@ -281,15 +291,23 @@ async function checkWeatherStatus() {
           console.log(doc.id);
 
           const response = await fetch(url);
-          const weatherData = await response.json();
+          //const weatherData = await response.json();
           const forecastURL = weatherData.properties.forecast;
           const forecastData = await fetch(forecastURL);
           const forecastJSON = await forecastData.json();
           const periods = forecastJSON.properties.periods;
 
-          const {today, tomorrow, tenDays} = getWeatherData(periods);
+          const query = await fetch(url);
+          const getwd = await query.json();
+          const urlo = getwd.id;
+          const query2 = await fetch(urlo);
+          const getwd2 = await query2.json();
+          const risk_r = getwd2.properties.probabilityOfPrecipitation.values;
+          const risk = risk_r[0].value;
 
-          const risk = calculateRainRisk(today, tomorrow, tenDays);
+          //const {today, tomorrow, tenDays} = getWeatherData(periods);
+
+          //  const risk = calculateRainRisk(today, tomorrow, tenDays);
 
           console.log(risk);
           await inletRef.update({risk: risk});
