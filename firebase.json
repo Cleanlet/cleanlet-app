@@ -39,6 +39,12 @@
     "singleProjectMode": true,
     "eventarc": {
       "port": 9299
+    },
+    "database": {
+      "port": 9000
+    },
+    "hosting": {
+      "port": 5000
     }
   }
 }
