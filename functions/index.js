@@ -1,4 +1,3 @@
-/* eslint-disable require-jsdoc */
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const fetch = require("node-fetch");
@@ -7,8 +6,13 @@ const csv = require("csv-parser");
 const fs = require("fs-extra");
 const os = require("os");
 const geofire = require("geofire-common");
+const {initializeApp} = require("firebase-admin/app");
+const moment = require("moment-timezone");
 
-admin.initializeApp();
+
+const app = initializeApp();
+
+// admin.initializeApp();
 
 exports.calculateJobPoints = functions.firestore
     .document("inletCleaningJobs/{jobId}")
@@ -141,21 +145,57 @@ exports.inletStatusUpdated = functions.firestore
     .document("inlets/{inletId}")
     .onUpdate(async (change, context) => {
       const newValue = change.after.data();
-      const status = newValue.status;
+      const oldValue = change.before.data();
 
-      if (status.risk.probabilityofPercipition > 35) {
-        const inletRef = admin.firestore().collection("inlets").doc(context.params.inletId);
-        const doc = await inletRef.get();
-        if (!doc.exists) {
-          console.log("No such document!");
-        } else {
-          inletRef.update({status: "cleaningNeeded"});
+      const lastNotificationAndCleaningJobCreated = newValue.lastNotificationAndCleaningJobCreated;
+      const now = admin.firestore.Timestamp.now();
+
+      // If lastNotificationAndCleaningJobCreated does not exist or if 48 hours have passed since its value
+      if (!lastNotificationAndCleaningJobCreated || now.toDate().getTime() - lastNotificationAndCleaningJobCreated.toDate().getTime() >= 48 * 60 * 60 * 1000) {
+      // Check if risk value has changed
+        if (oldValue.risk !== newValue.risk && newValue.risk > 35) {
+        // Create cleaning job
+          createInletCleaningJob(context.params.inletId, newValue.risk);
+          console.log("Sending push notifications to users subscribed to this inlet" + newValue.subscribed);
+
+          let tokens = [];
+          for (const userId of newValue.subscribed) {
+            const user = await admin.firestore().collection("users").doc(userId).get();
+            if (user.exists) {
+              const userTokens = user.data().tokens;
+              if (Array.isArray(userTokens)) {
+                tokens = [...tokens, ...userTokens];
+              } else {
+                console.log(`User ${userId}'s tokens are not an array (may be null or some other type).`);
+              }
+            } else {
+              console.log(`User ${userId} does not exist.`);
+            }
+          }
+
+          console.log("FCM Tokens: ", tokens);
+
+          const payload = {
+            notification: {
+              title: "Inlet Cleaning Needed",
+              body: "An Inlet you volunteered for needs cleaning",
+            },
+          };
+
+          if (tokens.length > 0) {
+            console.log("Sending push notifications to users subscribed to this inlet: ", newValue.subscribed);
+            await admin.messaging().sendToDevice(tokens, payload);
+            console.log("Push notifications sent");
+          } else {
+            console.log("Tokens array is empty. No notifications will be sent.");
+          }
+
+          // Update lastNotificationAndCleaningJobCreated in inlet document
+          const inletRef = admin.firestore().collection("inlets").doc(context.params.inletId);
+          await inletRef.update({lastNotificationAndCleaningJobCreated: now});
         }
-      }
-      
-      if (status === "cleaningNeeded") {
-        createInletCleaningJob(context.params.inletId, newValue.risk);
-      //  sendPushNotifications(watching);
+      } else {
+        console.log("Less than 48 hours have passed since the last run. Doing nothing.");
       }
     });
 
@@ -290,27 +330,36 @@ async function checkWeatherStatus() {
           }`;
           console.log(doc.id);
 
-          const response = await fetch(url);
-          //const weatherData = await response.json();
-          const forecastURL = weatherData.properties.forecast;
-          const forecastData = await fetch(forecastURL);
-          const forecastJSON = await forecastData.json();
-          const periods = forecastJSON.properties.periods;
+          // const response = await fetch(url);
+          // const weatherData = await response.json();
+          // const forecastURL = weatherData.properties.forecast;
+          // const forecastData = await fetch(forecastURL);
+          // const forecastJSON = await forecastData.json();
+          // const periods = forecastJSON.properties.periods;
 
           const query = await fetch(url);
           const getwd = await query.json();
           const urlo = getwd.id;
           const query2 = await fetch(urlo);
           const getwd2 = await query2.json();
-          const risk_r = getwd2.properties.probabilityOfPrecipitation.values;
-          const risk = risk_r[0].value;
+          const forecastURL = getwd2.properties.forecast;
+          const forecastData = await fetch(forecastURL);
+          const forecastJSON = await forecastData.json();
+          const periods = forecastJSON.properties.periods;
+          const nextPeriod = periods[0];
+          const risk = nextPeriod.probabilityOfPrecipitation;
+          console.log(risk.value);
 
-          //const {today, tomorrow, tenDays} = getWeatherData(periods);
+          // console.log(JSON.stringify(getwd2.properties))
+          // const risk_r = getwd2.properties.probabilityOfPrecipitation.values;
+          // const risk = risk_r[0].value;
+
+          // const {today, tomorrow, tenDays} = getWeatherData(periods);
 
           //  const risk = calculateRainRisk(today, tomorrow, tenDays);
 
-          console.log(risk);
-          await inletRef.update({risk: risk});
+          // console.log(risk);
+          await inletRef.update({risk: risk.value});
         });
       });
 }
@@ -341,32 +390,3 @@ function createInletCleaningJob(inletId, risk) {
         });
       });
 }
-
-
-// eslint-disable-next-line no-unused-vars
-// async function sendPushNotifications(watchingUsesrIds) {
-//   const fcmTokens = [];
-//   const payload = {
-//     notification: {
-//       title: "Inlet needs cleaning",
-//       body: "The inlet near you needs cleaning",
-//       icon: "https://placekitten.com/200/200",
-//     },
-//   };
-//   await watchingUsesrIds.forEach((userId) => {
-//     admin
-//         .firestore()
-//         .collection("users")
-//         .doc(userId)
-//         .get()
-//         .then((doc) => {
-//           if (doc.exists) {
-//           // Todo: add fcmToken to fcmTokens array
-//             console.log(doc.data());
-//           }
-//         });
-//   });
-//   if (fcmTokens.length > 0) {
-//     admin.messaging().sendToDevice(fcmTokens, payload);
-//   }
-// }
