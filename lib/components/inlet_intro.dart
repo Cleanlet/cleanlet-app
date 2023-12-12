@@ -3,10 +3,10 @@ import 'package:map_launcher/map_launcher.dart';
 
 class InletIntro extends StatelessWidget {
   final Coords coords;
-  const InletIntro({
-    Key? key,
-    required this.coords,
-  }) : super(key: key);
+  final String description;
+  final String address;
+
+  const InletIntro({Key? key, required this.coords, required this.description, required this.address}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -25,19 +25,16 @@ class InletIntro extends StatelessWidget {
             Flexible(
               child: GestureDetector(
                 onTap: () async {
-                  final availableMaps = await MapLauncher
-                      .installedMaps; // [AvailableMap { mapName: Google Maps, mapType: google }, ...]
+                  final availableMaps = await MapLauncher.installedMaps; // [AvailableMap { mapName: Google Maps, mapType: google }, ...]
                   await availableMaps.first.showDirections(
                     destination: coords,
                     destinationTitle: "Inlet Location",
                   );
                 },
-                child: const Column(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text('1234 Example Street Philadelphia PA 19106',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text(address, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     SizedBox(
                       height: 5,
                     ),
@@ -49,7 +46,7 @@ class InletIntro extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 20),
-        const Row(
+        Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(
@@ -64,15 +61,11 @@ class InletIntro extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text('Inlet Description',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text('Inlet Description', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   SizedBox(
                     height: 5,
                   ),
-                  Text(
-                      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
-                      style: TextStyle(fontSize: 14)),
+                  Text(description, style: TextStyle(fontSize: 14)),
                 ],
               ),
             ),

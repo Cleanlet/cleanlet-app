@@ -36,10 +36,8 @@ class _JobStartPageState extends ConsumerState<CleaningPhotoView> {
 
   Future<void> _completeJob(ref) async {
     final database = ref.read(databaseProvider);
-    await database
-        .updateInlet(widget.inlet.referenceId, data: {'status': 'cleaned'});
-    await database.updateJob(widget.inlet.jobId,
-        data: {"finishedAt": Timestamp.now(), "status": "cleaned"});
+    await database.updateInlet(widget.inlet.referenceId, data: {'status': 'cleaned'});
+    await database.updateJob(widget.inlet.jobId, data: {"finishedAt": Timestamp.now(), "status": "cleaned"});
     _showMyDialog();
   }
 
@@ -62,8 +60,7 @@ class _JobStartPageState extends ConsumerState<CleaningPhotoView> {
             TextButton(
               child: const Text('Continue'),
               onPressed: () {
-                Navigator.pushNamedAndRemoveUntil(
-                    context, '/home', (route) => false);
+                Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
               },
             ),
           ],
@@ -75,8 +72,7 @@ class _JobStartPageState extends ConsumerState<CleaningPhotoView> {
   @override
   Widget build(BuildContext context) {
     final imagesRef = storageRef.child('cleaning-images');
-    final imageRef =
-        imagesRef.child('${widget.inlet.jobId}-${widget.photoToTake}.jpg');
+    final imageRef = imagesRef.child(widget.inlet.jobId).child('${widget.photoToTake}.jpg');
 
     return Scaffold(
       appBar: AppBar(
@@ -126,24 +122,7 @@ class _JobStartPageState extends ConsumerState<CleaningPhotoView> {
                 ),
               ),
               const Spacer(),
-              ElevatedButton.icon(
-                  onPressed: (_image == null)
-                      ? null
-                      : () async => {
-                            await imageRef.putFile(_image!),
-                            if (widget.photoToTake == 'Before')
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) =>
-                                          TestPage(widget.inlet)))
-                            else if (widget.photoToTake == 'After')
-                              await _completeJob(ref)
-                          },
-                  icon: const Icon(Icons.check),
-                  label: const Text("Complete"),
-                  style: ElevatedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(40)))
+              ElevatedButton.icon(onPressed: (_image == null) ? null : () async => {await imageRef.putFile(_image!), if (widget.photoToTake == 'Before') Navigator.push(context, MaterialPageRoute(builder: (context) => TestPage(widget.inlet))) else if (widget.photoToTake == 'After') await _completeJob(ref)}, icon: const Icon(Icons.check), label: const Text("Complete"), style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(40)))
             ],
           ),
         ),

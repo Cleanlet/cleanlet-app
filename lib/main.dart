@@ -7,8 +7,7 @@ import 'package:cleanlet/views/settings.dart';
 import 'package:cleanlet/views/terms_and_conditions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:firebase_auth/firebase_auth.dart'
-    hide PhoneAuthProvider, EmailAuthProvider;
+import 'package:firebase_auth/firebase_auth.dart' hide PhoneAuthProvider, EmailAuthProvider;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -41,16 +40,16 @@ void main() async {
   ]);
 
   // Pull firebase data from local emulators in dev
-  if (kDebugMode) {
-    try {
-      FirebaseFirestore.instance.useFirestoreEmulator('localhost', 8080);
-      FirebaseStorage.instance.useStorageEmulator('localhost', 9199);
-      await FirebaseAuth.instance.useAuthEmulator('localhost', 9099);
-    } catch (e) {
-      // ignore: avoid_print
-      print(e);
-    }
-  }
+  // if (kDebugMode) {
+  //   try {
+  //     FirebaseFirestore.instance.useFirestoreEmulator('localhost', 8080);
+  //     FirebaseStorage.instance.useStorageEmulator('localhost', 9199);
+  //     await FirebaseAuth.instance.useAuthEmulator('localhost', 9099);
+  //   } catch (e) {
+  //     // ignore: avoid_print
+  //     print(e);
+  //   }
+  // }
 
   runApp(const ProviderScope(child: MyApp()));
 }
@@ -59,8 +58,7 @@ class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
 
   static FirebaseAnalytics analytics = FirebaseAnalytics.instance;
-  static FirebaseAnalyticsObserver observer =
-      FirebaseAnalyticsObserver(analytics: analytics);
+  static FirebaseAnalyticsObserver observer = FirebaseAnalyticsObserver(analytics: analytics);
 
   @override
   ConsumerState<MyApp> createState() => _MyAppState();
@@ -102,8 +100,7 @@ class _MyAppState extends ConsumerState<MyApp> {
                   title: 'Terms & Conditions',
                   icon: Icons.link,
                   action: (context) async {
-                    final url = Uri.parse(
-                        'https://cleanletapp.cae.drexel.edu/privacy-policy/');
+                    final url = Uri.parse('https://cleanletapp.cae.drexel.edu/privacy-policy/');
                     await _launchUrl(url);
                   },
                 ),
@@ -111,8 +108,7 @@ class _MyAppState extends ConsumerState<MyApp> {
                   title: 'FAQs',
                   icon: Icons.link,
                   action: (context) async {
-                    final url =
-                        Uri.parse('https://cleanletapp.cae.drexel.edu/');
+                    final url = Uri.parse('https://cleanletapp.cae.drexel.edu/');
                     await _launchUrl(url);
                   },
                 ),
@@ -120,8 +116,7 @@ class _MyAppState extends ConsumerState<MyApp> {
                   title: 'Add an Inlet',
                   icon: Icons.add,
                   action: (context) async {
-                    final url = Uri.parse(
-                        'https://docs.google.com/forms/d/e/1FAIpQLSe4ISFYoUAdZ93AZw14SBwfqHoH4ShKLfVVXKKhCz-3ibXZjQ/viewform');
+                    final url = Uri.parse('https://docs.google.com/forms/d/e/1FAIpQLSe4ISFYoUAdZ93AZw14SBwfqHoH4ShKLfVVXKKhCz-3ibXZjQ/viewform');
                     await _launchUrl(url);
                   },
                 ),
@@ -166,7 +161,7 @@ class AuthGate extends StatelessWidget {
               padding: EdgeInsets.only(top: 20),
               child: AspectRatio(
                 aspectRatio: 1,
-                child: Image(image: AssetImage('assets/cleanlet-logo.png')),
+                child: Image(image: AssetImage('assets/cleanlet-logo-v2.png')),
               ),
             );
           },
@@ -179,9 +174,9 @@ class AuthGate extends StatelessWidget {
 }
 
 Future<void> _launchUrl(Uri uri) async {
-  if (!await canLaunch(uri.toString())) {
+  if (!await canLaunchUrl(uri)) {
     throw Exception('Could not launch $uri');
   } else {
-    await launch(uri.toString());
+    await launchUrl(uri);
   }
 }

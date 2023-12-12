@@ -12,7 +12,6 @@ class InletJobPage extends StatefulWidget {
 }
 
 class _InletJobPageState extends State<InletJobPage> {
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -40,8 +39,7 @@ class _InletJobPageState extends State<InletJobPage> {
           child: ElevatedButton.icon(
             icon: const Icon(Icons.check_circle),
             style: ElevatedButton.styleFrom(
-              minimumSize: const Size.fromHeight(
-                  40), // fromHeight use double.infinity as width and 40 is the height
+              minimumSize: const Size.fromHeight(40), // fromHeight use double.infinity as width and 40 is the height
             ),
             label: const Text('I finished cleaning the drain'),
             onPressed: () {

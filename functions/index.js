@@ -8,6 +8,9 @@ const os = require("os");
 const geofire = require("geofire-common");
 const {initializeApp} = require("firebase-admin/app");
 const moment = require("moment-timezone");
+const { stringify } = require("csv-stringify/sync");
+const archiver = require("archiver");
+const ObjectsToCsv = require('objects-to-csv');
 
 
 const app = initializeApp();
@@ -37,6 +40,7 @@ exports.calculateJobPoints = functions.firestore
         if (!doc.exists) {
           console.log("No such document!");
         } else {
+          // taskAverageTime is left over from previous discussion for calculating difficulty of cleaning a specific inlet, in the future it can be calculated by the existing jobs in the db. Update in docs
           let {geoLocation, taskAverageTime} = doc.data();
           const jobCompletionTime = finishedAt - startedAt;
           //  console.log(geoLocation);
@@ -104,6 +108,16 @@ exports.triggerWeatherStatus = functions.https.onRequest(
     },
 );
 
+/**
+ * [getDistanceFromLatLonInKm description]
+ *
+ * @param   {[type]}  lat1  [lat1 description]
+ * @param   {[type]}  lon1  [lon1 description]
+ * @param   {[type]}  lat2  [lat2 description]
+ * @param   {[type]}  lon2  [lon2 description]
+ *
+ * @return  {[type]}        [return description]
+ */
 function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
   const R = 6371; // Radius of the earth in km
   const dLat = deg2rad(lat2 - lat1); // deg2rad below
@@ -119,10 +133,26 @@ function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
   return d;
 }
 
+/**
+ * [deg2rad description]
+ *
+ * @param   {[type]}  deg  [deg description]
+ *
+ * @return  {[type]}       [return description]
+ */
 function deg2rad(deg) {
   return deg * (Math.PI / 180);
 }
 
+/**
+ * [calculatePoints description]
+ *
+ * @param   {[type]}  jobCompletionTime  [jobCompletionTime description]
+ * @param   {[type]}  taskAverageTime    [taskAverageTime description]
+ * @param   {[type]}  distanceFromJob    [distanceFromJob description]
+ *
+ * @return  {[type]}                     [return description]
+ */
 function calculatePoints(jobCompletionTime, taskAverageTime, distanceFromJob) {
   const pointsPerSecond = 10; // set the base points per second
   const timeDifference = taskAverageTime - jobCompletionTime;
@@ -269,51 +299,150 @@ exports.checkUploadedImage = functions.storage
       }
     });
 
-function getWeatherData(periods) {
-  const today = periods[0];
-  const tomorrow = periods[1];
-  const tenDays = periods.slice(0, 10);
 
-  return {today, tomorrow, tenDays};
-}
+exports.exportCSVData = functions.https.onRequest(async (req, res) => {
+  const db = admin.firestore();
 
-function calculateRainRisk(today, tomorrow, tenDays) {
-  // Calculate the rain accumulation for the next 10 days
-  const rainAccumulation = tenDays.reduce((total, day) => {
-    const {qpf = 0} = day;
-    return total + qpf;
-  }, 0);
+  try {
+    const archive = archiver("zip");
 
-  // Calculate the rainfall per hour for tomorrow
-  const {detailedForecast} = tomorrow;
-  const rainfallPerHourTomorrow = detailedForecast.match(
-      /(\d+(?:\.\d+)?).+rain/,
-  );
+    res.setHeader("Content-Type", "application/zip");
+    res.setHeader("Content-Disposition", "attachment; filename=cleanlet-data.zip");
 
-  // Calculate the probability of precipitation for the next 10 days
-  const probabilityOfPrecipitation =
-    tenDays.reduce((total, day) => {
-      const {pop = 0} = day;
-      return total + pop;
-    }, 0) / 10;
+    archive.pipe(res);
 
-  //  dry event
-  //  add;
+    const inletSnapshots = await db.collection("inlets").get();
+    const inletData = [];
 
-  // Calculate the risk score based on the rain accumulation,
-  // rainfall per hour, and probability of precipitation
-  const riskScore =
-    rainAccumulation * 2 +
-    rainfallPerHourTomorrow * 10 +
-    probabilityOfPrecipitation * 5;
-  return {
-    score: riskScore,
-    rainAccumulation: rainAccumulation,
-    rainfallPerHourTomorrow: rainfallPerHourTomorrow,
-    probabilityOfPrecipitation: probabilityOfPrecipitation,
-  };
-}
+    if (!inletSnapshots.empty) {
+      inletSnapshots.forEach((doc) => {
+        const data = doc.data();
+        inletData.push({
+          id: doc.id,
+          nickName: data.nickName,
+          risk: data.risk,
+          latitude: data.geoLocation.latitude,
+          longitude: data.geoLocation.longitude,
+          status: data.status,
+        });
+      });
 
+      const inletCSV = new ObjectsToCsv(inletData);
+      archive.append(await inletCSV.toString(), {name: "inlets.csv"});
+    }
+
+    const inletCleaningJobSnapshots = await db.collection("inletCleaningJobs").get();
+    const inletCleaningJobData = [];
+
+    if (!inletCleaningJobSnapshots.empty) {
+      inletCleaningJobSnapshots.forEach((doc) => {
+        const data = doc.data();
+        inletCleaningJobData.push({
+          id: doc.id,
+          inletId: data.inletId,
+          risk: data.risk,
+          status: data.status,
+        });
+      });
+
+      const jobsCSV = new ObjectsToCsv(inletCleaningJobData);
+      archive.append(await jobsCSV.toString(), {name: "inletCleaningJobs.csv"});
+    }
+
+    const userSnapshots = await db.collection("users").get();
+    const usersData = [];
+
+    if (!userSnapshots.empty) {
+      userSnapshots.forEach(async (doc) => {
+        const data = doc.data();
+        const inlets = [];
+        let subscribed = "";
+
+        const inletsWatchedSnapshot = await db.collection("inlets").where('subscribed','array-contains', doc.id).get();
+
+        if (!inletsWatchedSnapshot.empty) {
+          inletsWatchedSnapshot.forEach((doc) => {
+            inlets.push(doc.id);
+          });
+
+          subscribed = inlets.join("|");
+        }
+
+        usersData.push({
+          id: doc.id,
+          displayName: data.displayName,
+          email: data.email,
+          points: data.points,
+          inlets: subscribed,
+        });
+      });
+
+      const usersDataCSV = new ObjectsToCsv(usersData);
+      archive.append(await usersDataCSV.toString(), {name: "users.csv"});
+    }
+
+    archive.finalize();
+
+    // res.status(200).send({
+    //   inlets: inletData,
+    //   jobs: inletCleaningJobData,
+    // });
+  } catch (error) {
+    console.error("Error fetching data or generating CSV", error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+// function getWeatherData(periods) {
+//   const today = periods[0];
+//   const tomorrow = periods[1];
+//   const tenDays = periods.slice(0, 10);
+
+//   return {today, tomorrow, tenDays};
+// }
+
+// function calculateRainRisk(today, tomorrow, tenDays) {
+//   // Calculate the rain accumulation for the next 10 days
+//   const rainAccumulation = tenDays.reduce((total, day) => {
+//     const {qpf = 0} = day;
+//     return total + qpf;
+//   }, 0);
+
+//   // Calculate the rainfall per hour for tomorrow
+//   const {detailedForecast} = tomorrow;
+//   const rainfallPerHourTomorrow = detailedForecast.match(
+//       /(\d+(?:\.\d+)?).+rain/,
+//   );
+
+//   // Calculate the probability of precipitation for the next 10 days
+//   const probabilityOfPrecipitation =
+//     tenDays.reduce((total, day) => {
+//       const {pop = 0} = day;
+//       return total + pop;
+//     }, 0) / 10;
+
+//   //  dry event
+//   //  add;
+
+//   // Calculate the risk score based on the rain accumulation,
+//   // rainfall per hour, and probability of precipitation
+//   const riskScore =
+//     rainAccumulation * 2 +
+//     rainfallPerHourTomorrow * 10 +
+//     probabilityOfPrecipitation * 5;
+//   return {
+//     score: riskScore,
+//     rainAccumulation: rainAccumulation,
+//     rainfallPerHourTomorrow: rainfallPerHourTomorrow,
+//     probabilityOfPrecipitation: probabilityOfPrecipitation,
+//   };
+// }
+
+/**
+ * [async description]
+ *
+ * @return  {[type]}  [return description]
+ */
 async function checkWeatherStatus() {
   console.log("check weather status");
   admin
@@ -365,13 +494,20 @@ async function checkWeatherStatus() {
 }
 
 // eslint-disable-next-line no-unused-vars
-function updateInletStatus(inletId, status = null) {
-  admin.firestore().collection("inlets").doc(inletId).update({
-    lastChecked: admin.firestore.FieldValue.serverTimestamp(),
-    status: status,
-  });
-}
+// function updateInletStatus(inletId, status = null) {
+//   admin.firestore().collection("inlets").doc(inletId).update({
+//     lastChecked: admin.firestore.FieldValue.serverTimestamp(),
+//     status: status,
+//   });
+// }
 
+/**
+ * [createInletCleaningJob description]
+ *
+ * @param   {[type]}  inletId  [inletId description]
+ * @param   {[type]}  risk     [risk description]
+ *
+ */
 function createInletCleaningJob(inletId, risk) {
   admin
       .firestore()

@@ -25,7 +25,7 @@ class LoginPage extends StatelessWidget {
             padding: EdgeInsets.only(top: 20),
             child: AspectRatio(
               aspectRatio: 1,
-              child: Image(image: AssetImage('assets/cleanlet-logo.png')),
+              child: Image(image: AssetImage('assets/cleanlet-logo-v2.png')),
             ),
           );
         },
