@@ -21,7 +21,7 @@ import Foundation
   }
 
      GMSServices.provideAPIKey(dartDefinesDictionary["GOOGLE_MAPS_KEY_IOS"] as? String ?? "");
-//    GMSServices.provideAPIKey("AIzaSyCphlR0TiKeOP6tWnLj_MSkHEL_3bVPBPQ")
+     
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
