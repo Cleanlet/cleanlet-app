@@ -169,12 +169,12 @@ class ShowButton extends ConsumerWidget {
   build(BuildContext context, WidgetRef ref) {
     String jobId = inlet.jobId;
 
-    if (inlet.status == 'cleaningScheduled') {
+    if (inlet.status == 'cleaningScheduled' && inlet.isSubscribed) {
       print('status is cleaningScheduled');
       return VolunteerButton(jobId, inlet.referenceId);
-    } else if (inlet.status == 'accepted') {
+    } else if (inlet.status == 'accepted' && inlet.isSubscribed) {
       return StartButton(inlet);
-    } else if (inlet.status == 'cleaning') {
+    } else if (inlet.status == 'cleaning' && inlet.isSubscribed) {
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 10.0),
         child: OutlinedButton.icon(

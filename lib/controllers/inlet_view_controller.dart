@@ -52,11 +52,7 @@ class InletViewController extends AutoDisposeAsyncNotifier<void> {
       geoPoint = GeoPoint(position.latitude, position.longitude);
     }
     await database.updateInlet(inletId, data: {'status': 'cleaning'});
-    await database.updateJob(jobId, data: {
-      "startedLocation": geoPoint,
-      "startedAt": Timestamp.now(),
-      "status": "cleaning"
-    });
+    await database.updateJob(jobId, data: {"startedLocation": geoPoint, "startedAt": Timestamp.now(), "status": "cleaning"});
   }
 
   Future<void> removeInletSubscription(Inlet inlet, CleanletUser user) async {
@@ -64,17 +60,16 @@ class InletViewController extends AutoDisposeAsyncNotifier<void> {
     await database.updateInlet(inlet.referenceId, data: {
       'subscribed': FieldValue.arrayRemove([user.uid])
     });
-    await database.updateUser(user.uid,
-        data: {'inletsWatched': FieldValue.increment(-1)});
+    await database.updateUser(user.uid, data: {'inletsWatched': FieldValue.increment(-1)});
   }
 
   Future<void> addInletSubscription(Inlet inlet, CleanletUser user) async {
+    print(user.uid);
     final database = ref.read(databaseProvider);
     await database.updateInlet(inlet.referenceId, data: {
       'subscribed': FieldValue.arrayUnion([user.uid])
     });
-    await database
-        .updateUser(user.uid, data: {'inletsWatched': FieldValue.increment(1)});
+    await database.updateUser(user.uid, data: {'inletsWatched': FieldValue.increment(1)});
   }
 
   Future<void> inletCleaningAccepted(String jobId, String inletId) async {
@@ -91,15 +86,8 @@ class InletViewController extends AutoDisposeAsyncNotifier<void> {
       geoPoint = GeoPoint(position.latitude, position.longitude);
     }
     await database.updateInlet(inletId, data: {'status': 'accepted'});
-    await database.updateJob(jobId, data: {
-      "acceptedLocation": geoPoint,
-      "acceptedBy": user.uid,
-      "acceptedAt": Timestamp.now(),
-      "status": "accepted"
-    });
+    await database.updateJob(jobId, data: {"acceptedLocation": geoPoint, "acceptedBy": user.uid, "acceptedAt": Timestamp.now(), "status": "accepted"});
   }
 }
 
-final inletViewControllerProvider =
-    AutoDisposeAsyncNotifierProvider<InletViewController, void>(
-        InletViewController.new);
+final inletViewControllerProvider = AutoDisposeAsyncNotifierProvider<InletViewController, void>(InletViewController.new);

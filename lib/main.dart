@@ -174,9 +174,7 @@ class AuthGate extends StatelessWidget {
 }
 
 Future<void> _launchUrl(Uri uri) async {
-  if (!await canLaunchUrl(uri)) {
+  if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
     throw Exception('Could not launch $uri');
-  } else {
-    await launchUrl(uri);
   }
 }

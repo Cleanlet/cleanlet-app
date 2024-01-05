@@ -28,7 +28,7 @@ class HomePage extends StatefulWidget {
 class HomePageState extends State<HomePage> {
   FirebaseMessaging messaging = FirebaseMessaging.instance;
   List<Marker> mapMarkers = [];
-  final List<String> messages = ["Hi and welcome to Cleanlet! Thank you for supporting this project! Here's a few things that you should know:", "Be safe: Always follow the cleaning guidelines an clean only when it feels safe to you. You can find the guidelines in the (?) section of the app", "Feel free to let us know of any bugs or feedbacks using the buttin in the top right menu", "Read the instructions on how to use the app in the (?) section"];
+  final List<String> messages = ["Hi and welcome to Cleanlet! Thank you for supporting this project! Here are a few things that you should know:", "Be safe: Always follow the cleaning guidelines and clean only when it feels safe to you. You can find the guidelines in the (?) section of the app.", "Feel free to let us know of any bugs or feedback using the button in the top right menu.", "Read the instructions on how to use the app in the (?) section."];
 
   Future<bool> checkFirstSeen() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -176,12 +176,14 @@ class HomePageState extends State<HomePage> {
         actions: [
           IconButton(
               onPressed: () {
-                Navigator.pushNamed(context, '/inletSearch');
+                // Navigator.pushNamed(context, '/inletSearch');
+                showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return CarouselModalWidget(messages: messages);
+                    });
               },
-              icon: const Icon(
-                Icons.help_outline_rounded,
-                color: Colors.white,
-              )),
+              icon: const Icon(Icons.help_outline_rounded)),
           IconButton(
               onPressed: () {
                 Navigator.pushNamed(context, '/settings');

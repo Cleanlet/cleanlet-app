@@ -17,7 +17,7 @@ class CurrentInletsWatched extends ConsumerWidget {
         final String inletsText = inletsWatched == 1 ? 'inlet' : 'inlets';
 
         return Padding(
-          padding: const EdgeInsets.only(top: 20),
+          padding: const EdgeInsets.only(top: 15),
           child: Text(
             'You currently volunteer to clean: $inletsWatched $inletsText',
             style: const TextStyle(color: Colors.white),
