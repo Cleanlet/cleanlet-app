@@ -353,7 +353,7 @@ exports.exportCSVData = functions.https.onRequest(async (req, res) => {
     const usersData = [];
 
     if (!userSnapshots.empty) {
-      userSnapshots.forEach(async (doc) => {
+      for (const doc of userSnapshots.docs) {
         const data = doc.data();
         const inlets = [];
         let subscribed = "";
@@ -375,7 +375,7 @@ exports.exportCSVData = functions.https.onRequest(async (req, res) => {
           points: data.points,
           inlets: subscribed,
         });
-      });
+      }
 
       const usersDataCSV = new ObjectsToCsv(usersData);
       archive.append(await usersDataCSV.toString(), {name: "users.csv"});
