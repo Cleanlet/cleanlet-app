@@ -41,6 +41,11 @@ class _JobStartPageState extends ConsumerState<CleaningPhotoView> {
     _showMyDialog();
   }
 
+  Future<void> _addBeforePhotoUploadedMarker(ref) async {
+    final database = ref.read(databaseProvider);
+    await database.updateInlet(widget.inlet.referenceId, data: {"status": "cleaning-with-before"});
+  }
+
   Future<void> _showMyDialog() async {
     return showDialog<void>(
       context: context,
@@ -122,7 +127,28 @@ class _JobStartPageState extends ConsumerState<CleaningPhotoView> {
                 ),
               ),
               const Spacer(),
-              ElevatedButton.icon(onPressed: (_image == null) ? null : () async => {await imageRef.putFile(_image!), if (widget.photoToTake == 'Before') Navigator.push(context, MaterialPageRoute(builder: (context) => TestPage(widget.inlet))) else if (widget.photoToTake == 'After') await _completeJob(ref)}, icon: const Icon(Icons.check), label: const Text("Complete"), style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(40)))
+              ElevatedButton.icon(
+                onPressed: _image == null
+                    ? null
+                    : () async {
+                        await imageRef.putFile(_image!);
+                        // You can add more code here
+                        if (widget.photoToTake == 'Before') {
+                          // Add an indicator to the job so that if the user closes the app and comes back to it we can check and redirect them to the after screen
+                          await _addBeforePhotoUploadedMarker(ref);
+
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => TestPage(widget.inlet)),
+                          );
+                        } else if (widget.photoToTake == 'After') {
+                          await _completeJob(ref);
+                        }
+                      },
+                icon: const Icon(Icons.check),
+                label: const Text("Complete"),
+                style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(40)),
+              )
             ],
           ),
         ),

@@ -95,9 +95,41 @@ class HomePageState extends State<HomePage> {
     // Assume user is logged in for this example
     String? userId = FirebaseAuth.instance.currentUser?.uid;
 
-    await FirebaseFirestore.instance.collection('users').doc(userId).update({
-      'tokens': FieldValue.arrayUnion([token]),
-    });
+    if (userId == null) return;
+
+    final userDoc = FirebaseFirestore.instance.collection('users').doc(userId);
+
+    bool success = await updateUserToken(userDoc, token);
+
+    if (!success) {
+      await Future.delayed(Duration(seconds: 5));
+      await updateUserToken(userDoc, token);
+    }
+
+    // await FirebaseFirestore.instance.collection('users').doc(userId).update({
+    //   'tokens': FieldValue.arrayUnion([token]),
+    // });
+  }
+
+  Future<bool> updateUserToken(DocumentReference userDoc, String token) async {
+    try {
+      final docSnapshot = await userDoc.get();
+
+      if (docSnapshot.exists) {
+        await userDoc.update({
+          'tokens': FieldValue.arrayUnion([token]),
+        });
+
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error updating token: $e");
+      }
+      return false;
+    }
   }
 
   Future<void> setupToken() async {

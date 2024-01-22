@@ -1,5 +1,6 @@
 import 'package:cleanlet/utils/async_value_ui.dart';
 import 'package:cleanlet/views/job_start.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:map_launcher/map_launcher.dart';
@@ -10,6 +11,7 @@ import '../components/inlet_carousel.dart';
 import '../components/inlet_intro.dart';
 import '../controllers/inlet_view_controller.dart';
 import '../models/inlet.dart';
+import '../models/job.dart';
 import '../services/firestore_repository.dart';
 
 class InletView extends StatelessWidget {
@@ -186,6 +188,21 @@ class ShowButton extends ConsumerWidget {
           },
           icon: const Icon(Icons.notification_add),
           label: const Text('Start Cleaning'),
+          style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(40)),
+        ),
+      );
+    } else if (inlet.status == 'cleaning-with-before' && inlet.isSubscribed) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 10.0),
+        child: OutlinedButton.icon(
+          onPressed: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => CleaningPhotoView(inlet, 'After')),
+            );
+          },
+          icon: const Icon(Icons.notification_add),
+          label: const Text('Finished Cleaning'),
           style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(40)),
         ),
       );

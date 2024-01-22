@@ -299,6 +299,32 @@ exports.checkUploadedImage = functions.storage
       }
     });
 
+exports.testPushNotifications = functions.https.onRequest(async (req, res) => {
+  const userId = req.query.userId;
+  const user = await admin.firestore().collection("users").doc(req.query.user).get();
+  
+  console.log(`Testing push notification for user id: ${userId}`);
+
+  const tokens = user.data().tokens;
+
+  const payload = {
+    notification: {
+      title: "Cleanlet Test",
+      body: "If you are receiving this message, it is a test.",
+    },
+  };
+
+  if (tokens.length > 0) {
+    console.log("User has push tokens");
+    await admin.messaging().sendToDevice(tokens, payload);
+    console.log("Test Push Notification Sent");
+  } else {
+    console.log("Tokens array is empty. No notifications will be sent.");
+  }
+
+  res.status(200).send("Test Complete");
+});
+
 
 exports.exportCSVData = functions.https.onRequest(async (req, res) => {
   const db = admin.firestore();
@@ -324,6 +350,15 @@ exports.exportCSVData = functions.https.onRequest(async (req, res) => {
           latitude: data.geoLocation.latitude,
           longitude: data.geoLocation.longitude,
           status: data.status,
+          createdAt: data.createdAt ? data.createdAt.toDate()
+              .toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+                hour: "numeric",
+                minute: "numeric",
+                hour12: true,
+              }) : "",
         });
       });
 
@@ -342,6 +377,15 @@ exports.exportCSVData = functions.https.onRequest(async (req, res) => {
           inletId: data.inletId,
           risk: data.risk,
           status: data.status,
+          createdAt: data.createdAt ? data.createdAt.toDate()
+              .toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+                hour: "numeric",
+                minute: "numeric",
+                hour12: true,
+              }) : "",
         });
       });
 
@@ -374,6 +418,15 @@ exports.exportCSVData = functions.https.onRequest(async (req, res) => {
           email: data.email,
           points: data.points,
           inlets: subscribed,
+          createdAt: data.createdAt ? data.createdAt.toDate()
+              .toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+                hour: "numeric",
+                minute: "numeric",
+                hour12: true,
+              }) : "",
         });
       }
 
