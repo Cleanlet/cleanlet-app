@@ -8,11 +8,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:carousel_slider/carousel_slider.dart';
+import 'package:dots_indicator/dots_indicator.dart';
 
 import '../components/current_inlets_watched.dart';
 import '../models/inlet.dart';
 import '../services/firestore_repository.dart';
 import '../services/geolocation.dart';
+import '../components/carousel_modal_widget.dart';
 import 'inlet_view.dart';
 
 class HomePage extends StatefulWidget {
@@ -25,6 +28,7 @@ class HomePage extends StatefulWidget {
 class HomePageState extends State<HomePage> {
   FirebaseMessaging messaging = FirebaseMessaging.instance;
   List<Marker> mapMarkers = [];
+  final List<String> messages = ["Hi and welcome to Cleanlet! Thank you for supporting this project! Here are a few things that you should know:", "Be safe: Always follow the cleaning guidelines and clean only when it feels safe to you. You can find the guidelines in the (?) section of the app.", "Feel free to let us know of any bugs or feedback using the button in the top right menu.", "Read the instructions on how to use the app in the (?) section."];
 
   Future<bool> checkFirstSeen() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -70,8 +74,7 @@ class HomePageState extends State<HomePage> {
 
       if (message.notification != null) {
         if (kDebugMode) {
-          print(
-              'Message also contained a notification: ${message.notification}');
+          print('Message also contained a notification: ${message.notification}');
         }
       }
     });
@@ -92,9 +95,41 @@ class HomePageState extends State<HomePage> {
     // Assume user is logged in for this example
     String? userId = FirebaseAuth.instance.currentUser?.uid;
 
-    await FirebaseFirestore.instance.collection('users').doc(userId).update({
-      'tokens': FieldValue.arrayUnion([token]),
-    });
+    if (userId == null) return;
+
+    final userDoc = FirebaseFirestore.instance.collection('users').doc(userId);
+
+    bool success = await updateUserToken(userDoc, token);
+
+    if (!success) {
+      await Future.delayed(Duration(seconds: 5));
+      await updateUserToken(userDoc, token);
+    }
+
+    // await FirebaseFirestore.instance.collection('users').doc(userId).update({
+    //   'tokens': FieldValue.arrayUnion([token]),
+    // });
+  }
+
+  Future<bool> updateUserToken(DocumentReference userDoc, String token) async {
+    try {
+      final docSnapshot = await userDoc.get();
+
+      if (docSnapshot.exists) {
+        await userDoc.update({
+          'tokens': FieldValue.arrayUnion([token]),
+        });
+
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error updating token: $e");
+      }
+      return false;
+    }
   }
 
   Future<void> setupToken() async {
@@ -108,8 +143,7 @@ class HomePageState extends State<HomePage> {
     FirebaseMessaging.instance.onTokenRefresh.listen(saveTokenToDatabase);
   }
 
-  final Completer<GoogleMapController> _controller =
-      Completer<GoogleMapController>();
+  final Completer<GoogleMapController> _controller = Completer<GoogleMapController>();
 
   @override
   void initState() {
@@ -122,10 +156,9 @@ class HomePageState extends State<HomePage> {
     mapMarkers = inlets
         .map((inlet) => Marker(
             markerId: MarkerId(inlet.referenceId),
-            position:
-                LatLng(inlet.geoLocation.latitude, inlet.geoLocation.longitude),
+            position: LatLng(inlet.geoLocation.latitude, inlet.geoLocation.longitude),
             infoWindow: InfoWindow(
-              title: inlet.niceName,
+              title: inlet.nickName,
               snippet: inlet.referenceId,
             )))
         .toList();
@@ -145,10 +178,7 @@ class HomePageState extends State<HomePage> {
             return user.when(
                 data: (user) {
                   // create a string to display the user's name or email address display email if user's display name is null or blank
-                  String textToDisplay =
-                      (user.displayName != null && user.displayName!.isNotEmpty)
-                          ? user.displayName!
-                          : user.email;
+                  String textToDisplay = (user.displayName != null && user.displayName!.isNotEmpty) ? user.displayName! : user.email;
 
                   return Text(textToDisplay);
                 },
@@ -178,12 +208,14 @@ class HomePageState extends State<HomePage> {
         actions: [
           IconButton(
               onPressed: () {
-                Navigator.pushNamed(context, '/inletSearch');
+                // Navigator.pushNamed(context, '/inletSearch');
+                showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return CarouselModalWidget(messages: messages);
+                    });
               },
-              icon: const Icon(
-                Icons.help_outline_rounded,
-                color: Colors.white,
-              )),
+              icon: const Icon(Icons.help_outline_rounded)),
           IconButton(
               onPressed: () {
                 Navigator.pushNamed(context, '/settings');
@@ -217,45 +249,30 @@ class HomePageState extends State<HomePage> {
                   mapMarkers.addAll(inletsAsyncValue.value!
                       .map((inlet) => Marker(
                             onTap: () {
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) =>
-                                          InletView(inlet: inlet)));
+                              print(inlet.referenceId);
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => InletView(inlet: inlet)));
                             },
                             markerId: MarkerId(inlet.referenceId),
-                            position: LatLng(inlet.geoLocation.latitude,
-                                inlet.geoLocation.longitude),
+                            position: LatLng(inlet.geoLocation.latitude, inlet.geoLocation.longitude),
                           ))
                       .toList());
                 }
                 return SizedBox(
                   child: GoogleMap(
                     mapType: MapType.normal,
-                    initialCameraPosition: CameraPosition(
-                        target: LatLng(currentPosition.latitude,
-                            currentPosition.longitude),
-                        zoom: 19),
+                    initialCameraPosition: CameraPosition(target: LatLng(currentPosition.latitude, currentPosition.longitude), zoom: 19),
                     onMapCreated: (GoogleMapController controller) async {
                       _controller.complete(controller);
+
                       if (await checkFirstSeen()) {
                         WidgetsBinding.instance.addPostFrameCallback((_) {
+                          // showCarouselModal(context); // Call the function to show the carousel modal
+
                           showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AlertDialog(
-                                title: const Text('Hello World'),
-                                actions: <Widget>[
-                                  TextButton(
-                                    child: const Text('OK'),
-                                    onPressed: () {
-                                      Navigator.of(context).pop();
-                                    },
-                                  ),
-                                ],
-                              );
-                            },
-                          );
+                              context: context,
+                              builder: (BuildContext context) {
+                                return CarouselModalWidget(messages: messages);
+                              });
                         });
                       }
                     },

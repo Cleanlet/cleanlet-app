@@ -26,8 +26,7 @@ class SettingsPage extends StatelessWidget {
                   },
                 );
               },
-              separatorBuilder: (BuildContext context, int index) =>
-                  const Divider(),
+              separatorBuilder: (BuildContext context, int index) => const Divider(),
             ),
           ),
         ],
@@ -81,8 +80,7 @@ class MyApp extends StatelessWidget {
             title: 'Add an Inlet',
             icon: Icons.add,
             action: (context) async {
-              final url =
-                  'https://docs.google.com/forms/d/e/1FAIpQLSe4ISFYoUAdZ93AZw14SBwfqHoH4ShKLfVVXKKhCz-3ibXZjQ/viewform';
+              final url = 'https://docs.google.com/forms/d/e/1FAIpQLSe4ISFYoUAdZ93AZw14SBwfqHoH4ShKLfVVXKKhCz-3ibXZjQ/viewform';
               if (await canLaunch(url)) {
                 await launch(url);
               }

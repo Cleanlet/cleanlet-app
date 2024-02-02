@@ -44,3 +44,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+/android/cleanlet-release
+cleanlet-keystore.jks
+cleanlet-upload-cerificate.pem
