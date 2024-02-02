@@ -87,8 +87,18 @@ class _MyAppState extends ConsumerState<MyApp> {
       navigatorObservers: <NavigatorObserver>[MyApp.observer],
       routes: {
         '/profile': (context) => const ProfilePage(),
-        '/settings': (context) => SettingsPage(
-              items: [
+        '/settings': (context) => FutureBuilder(
+            future: getUserPoints(),
+            builder: (context, snapshot) {
+              List<SettingsItem> settingItems = [
+                if (snapshot.hasData)
+                  SettingsItem(
+                    title: 'Your Points: ${snapshot.data}',
+                    icon: Icons.star,
+                    action: (context) {
+                      // action when points are tapped (if needed)
+                    },
+                  ),
                 SettingsItem(
                   title: 'Profile',
                   icon: Icons.person,
@@ -130,9 +140,10 @@ class _MyAppState extends ConsumerState<MyApp> {
                     );
                     await _launchUrl(email);
                   },
-                ),
-              ],
-            ),
+                )
+              ];
+              return SettingsPage(items: settingItems);
+            }),
         '/home': (context) => const AuthGate(),
         '/add-inlet': (context) => const AddInletPage(),
         '/terms': (context) => const TermsAndConditionsPage(),
@@ -141,6 +152,24 @@ class _MyAppState extends ConsumerState<MyApp> {
       initialRoute: '/home',
       // home: const AuthGate(),
     );
+  }
+
+  Future<int> getUserPoints() async {
+    String? userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return 0;
+
+    try {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      var data = userDoc.data();
+      if (data is Map<String, dynamic>) {
+        return data['points'] ?? 0; // Replace 'points' with your field name in Firestore
+      } else {
+        return 0;
+      }
+    } catch (e) {
+      // Handle any errors here
+      return 0;
+    }
   }
 }
 

@@ -23,12 +23,13 @@ exports.calculateJobPoints = functions.firestore
       const newValue = change.after.data();
 
       const {
-        startedAt,
+        // startedAt,
         finishedAt,
         inletId,
         status,
-        acceptedLocation,
+        // acceptedLocation,
         acceptedBy,
+        createdAt,
       } = newValue;
 
       if (status === "cleaned") {
@@ -37,41 +38,46 @@ exports.calculateJobPoints = functions.firestore
 
         const inletRef = admin.firestore().collection("inlets").doc(inletId);
         const doc = await inletRef.get();
+
         if (!doc.exists) {
           console.log("No such document!");
         } else {
           // taskAverageTime is left over from previous discussion for calculating difficulty of cleaning a specific inlet, in the future it can be calculated by the existing jobs in the db. Update in docs
-          let {geoLocation, taskAverageTime} = doc.data();
-          const jobCompletionTime = finishedAt - startedAt;
-          //  console.log(geoLocation);
-          //  taskAverageTime can be null
-          if (!taskAverageTime) {
-            taskAverageTime = jobCompletionTime;
-          }
+          // let {geoLocation, taskAverageTime} = doc.data();
+          // const jobCompletionTime = finishedAt - startedAt;
+          // //  console.log(geoLocation);
+          // //  taskAverageTime can be null
+          // if (!taskAverageTime) {
+          //   taskAverageTime = jobCompletionTime;
+          // }
 
-          const distanceFromJob = getDistanceFromLatLonInKm(
-              acceptedLocation.latitude,
-              acceptedLocation.longitude,
-              geoLocation.latitude,
-              geoLocation.longitude,
-          );
+          // const distanceFromJob = getDistanceFromLatLonInKm(
+          //     acceptedLocation.latitude,
+          //     acceptedLocation.longitude,
+          //     geoLocation.latitude,
+          //     geoLocation.longitude,
+          // );
 
-          const weatherRiskScore = 1;
+          // const weatherRiskScore = 1;
           const jobId = context.params.jobId;
-          const points =
-          calculatePoints(jobCompletionTime, taskAverageTime, distanceFromJob) +
-          weatherRiskScore;
+          // const points =
+          // calculatePoints(jobCompletionTime, taskAverageTime, distanceFromJob) +
+          // weatherRiskScore;
+          const points = caluclatePointsV2(finishedAt, createdAt);
 
           const jobRef = admin
               .firestore()
               .collection("inletCleaningJobs")
               .doc(jobId);
+
           const usrRef = admin.firestore().collection("users").doc(acceptedBy);
           const batch = admin.firestore().batch();
+
           batch.update(jobRef, {points: points, status: "finalized"});
           batch.update(usrRef, {
             points: admin.firestore.FieldValue.increment(points),
           });
+
           await batch.commit();
         }
       }
@@ -171,6 +177,27 @@ function calculatePoints(jobCompletionTime, taskAverageTime, distanceFromJob) {
   return totalPoints;
 }
 
+/**
+ * [caluclatePointsV2 description]
+ *
+ * @param   {[type]}  jobCompletionTime  [jobCompletionTime description]
+ * @param   {[type]}  jobCreationTime    [jobCreationTime description]
+ *
+ * @return  {[type]}                     [return description]
+ */
+function caluclatePointsV2(jobCompletionTime, jobCreationTime) {
+  const createdAtDate = jobCreationTime.toDate();
+  const finishedAtDate = jobCompletionTime.toDate();
+  const timeDifference = finishedAtDate.getTime() - createdAtDate.getTime();
+
+  if (timeDifference <= 24 * 60 * 60 * 1000) {
+    return 2;
+  }
+  else {
+    return 1;
+  }
+}
+
 exports.inletStatusUpdated = functions.firestore
     .document("inlets/{inletId}")
     .onUpdate(async (change, context) => {
@@ -184,9 +211,15 @@ exports.inletStatusUpdated = functions.firestore
       if (!lastNotificationAndCleaningJobCreated || now.toDate().getTime() - lastNotificationAndCleaningJobCreated.toDate().getTime() >= 48 * 60 * 60 * 1000) {
       // Check if risk value has changed
         if (oldValue.risk !== newValue.risk && newValue.risk > 35) {
+          console.log("Risk value has changed from the old one and is greater than 35");
         // Create cleaning job
           createInletCleaningJob(context.params.inletId, newValue.risk);
-          console.log("Sending push notifications to users subscribed to this inlet" + newValue.subscribed);
+
+          if (newValue.subscribed) {
+            newValue.subscribed.forEach((subscriber) => {
+              console.log(`Sending push notification to: ${subscriber}`);
+            });
+          }
 
           let tokens = [];
           for (const userId of newValue.subscribed) {
@@ -194,6 +227,7 @@ exports.inletStatusUpdated = functions.firestore
             if (user.exists) {
               const userTokens = user.data().tokens;
               if (Array.isArray(userTokens)) {
+                console.log(`Adding ${userId} tokens to token array`);
                 tokens = [...tokens, ...userTokens];
               } else {
                 console.log(`User ${userId}'s tokens are not an array (may be null or some other type).`);
@@ -213,8 +247,18 @@ exports.inletStatusUpdated = functions.firestore
           };
 
           if (tokens.length > 0) {
-            console.log("Sending push notifications to users subscribed to this inlet: ", newValue.subscribed);
-            await admin.messaging().sendToDevice(tokens, payload);
+            console.log("Sending push notifications...");
+            
+            let messageResponse = await admin.messaging().sendToDevice(tokens, payload);
+            console.log("Response from Cloud Messaging:");
+            messageResponse.results.forEach((res) => {
+              if (res.error) {
+                console.log(res.error.message);
+              }
+              else {
+                console.log("Message sent successfully");
+              }
+            });
             console.log("Push notifications sent");
           } else {
             console.log("Tokens array is empty. No notifications will be sent.");
@@ -222,7 +266,10 @@ exports.inletStatusUpdated = functions.firestore
 
           // Update lastNotificationAndCleaningJobCreated in inlet document
           const inletRef = admin.firestore().collection("inlets").doc(context.params.inletId);
+          
           await inletRef.update({lastNotificationAndCleaningJobCreated: now});
+
+          console.log("Updated Inlet with the lastNotificationAndCleaningJobCreated");
         }
       } else {
         console.log("Less than 48 hours have passed since the last run. Doing nothing.");
@@ -300,8 +347,8 @@ exports.checkUploadedImage = functions.storage
     });
 
 exports.testPushNotifications = functions.https.onRequest(async (req, res) => {
-  const userId = req.query.userId;
-  const user = await admin.firestore().collection("users").doc(req.query.user).get();
+  const userId = req.query.user;
+  const user = await admin.firestore().collection("users").doc(userId).get();
   
   console.log(`Testing push notification for user id: ${userId}`);
 
@@ -316,7 +363,16 @@ exports.testPushNotifications = functions.https.onRequest(async (req, res) => {
 
   if (tokens.length > 0) {
     console.log("User has push tokens");
-    await admin.messaging().sendToDevice(tokens, payload);
+    let messageResponse = await admin.messaging().sendToDevice(tokens, payload);
+
+    messageResponse.results.forEach((res) => {
+      if (res.error) {
+        console.log(res.error.message);
+      }
+    });
+
+    // console.log("Response from Cloud Messaging:");
+    // console.log(messageResponse);
     console.log("Test Push Notification Sent");
   } else {
     console.log("Tokens array is empty. No notifications will be sent.");
@@ -376,6 +432,7 @@ exports.exportCSVData = functions.https.onRequest(async (req, res) => {
           id: doc.id,
           inletId: data.inletId,
           risk: data.risk,
+          points: data.points ? data.points : 0,
           status: data.status,
           createdAt: data.createdAt ? data.createdAt.toDate()
               .toLocaleDateString("en-US", {
@@ -510,7 +567,7 @@ async function checkWeatherStatus() {
           const url = `${baseUrl}/${doc.data().geoLocation.latitude},${
             doc.data().geoLocation.longitude
           }`;
-          console.log(doc.id);
+          console.log(`Checking weather status for: ${doc.id}`);
 
           // const response = await fetch(url);
           // const weatherData = await response.json();
@@ -530,7 +587,7 @@ async function checkWeatherStatus() {
           const periods = forecastJSON.properties.periods;
           const nextPeriod = periods[0];
           const risk = nextPeriod.probabilityOfPrecipitation;
-          console.log(risk.value);
+          console.log(`${doc.id} has a risk score of: ${risk.value}`);
 
           // console.log(JSON.stringify(getwd2.properties))
           // const risk_r = getwd2.properties.probabilityOfPrecipitation.values;
@@ -541,6 +598,7 @@ async function checkWeatherStatus() {
           //  const risk = calculateRainRisk(today, tomorrow, tenDays);
 
           // console.log(risk);
+          console.log(`Updating ${doc.id} risk score to ${risk.value}`);
           await inletRef.update({risk: risk.value});
         });
       });
